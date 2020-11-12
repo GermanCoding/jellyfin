@@ -16,7 +16,7 @@ namespace MediaBrowser.Controller.Authentication
 
         bool HasPassword(User user);
 
-        Task ChangePassword(User user, string newPassword);
+        Task ChangePassword(User user, string oldPassword, string newPassword);
     }
 
     public interface IRequiresResolvedUser

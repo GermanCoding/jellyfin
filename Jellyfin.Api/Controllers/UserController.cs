@@ -299,7 +299,7 @@ namespace Jellyfin.Api.Controllers
                     return StatusCode(StatusCodes.Status403Forbidden, "Invalid user or password entered.");
                 }
 
-                await _userManager.ChangePassword(user, request.NewPw).ConfigureAwait(false);
+                await _userManager.ChangePassword(user, request.CurrentPw, request.NewPw).ConfigureAwait(false);
 
                 var currentToken = _authContext.GetAuthorizationInfo(Request).Token;
 
@@ -480,7 +480,7 @@ namespace Jellyfin.Api.Controllers
             // no need to authenticate password for new user
             if (request.Password != null)
             {
-                await _userManager.ChangePassword(newUser, request.Password).ConfigureAwait(false);
+                await _userManager.ChangePassword(newUser, request.Password, request.Password).ConfigureAwait(false);
             }
 
             var result = _userManager.GetUserDto(newUser, HttpContext.GetNormalizedRemoteIp());

@@ -73,7 +73,7 @@ namespace Jellyfin.Server.Implementations.Users
                     var resetUser = userManager.GetUserByName(spr.UserName)
                         ?? throw new ResourceNotFoundException($"User with a username of {spr.UserName} not found");
 
-                    await userManager.ChangePassword(resetUser, pin).ConfigureAwait(false);
+                    await userManager.ChangePassword(resetUser, string.Empty, pin).ConfigureAwait(false);
                     usersReset.Add(resetUser.Username);
                     File.Delete(resetFile);
                 }
