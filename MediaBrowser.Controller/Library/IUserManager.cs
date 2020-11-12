@@ -131,7 +131,7 @@ namespace MediaBrowser.Controller.Library
         /// <summary>
         /// Changes the password.
         /// </summary>
-        Task ChangePassword(User user, string newPassword);
+        Task ChangePassword(User user, string oldPassword, string newPassword);
 
         /// <summary>
         /// Changes the easy password.

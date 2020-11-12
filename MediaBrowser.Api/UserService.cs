@@ -446,10 +446,11 @@ namespace MediaBrowser.Api
 
             if (request.ResetPassword)
             {
-                await _userManager.ResetPassword(user).ConfigureAwait(false);
+                throw new ArgumentException("This action is currently not supported.");
             }
             else
             {
+                /*
                 var success = await _userManager.AuthenticateUser(
                     user.Username,
                     request.CurrentPw,
@@ -461,8 +462,9 @@ namespace MediaBrowser.Api
                 {
                     throw new ArgumentException("Invalid user or password entered.");
                 }
+                */
 
-                await _userManager.ChangePassword(user, request.NewPw).ConfigureAwait(false);
+                await _userManager.ChangePassword(user, request.CurrentPw, request.NewPw).ConfigureAwait(false);
 
                 var currentToken = _authContext.GetAuthorizationInfo(Request).Token;
 
@@ -530,7 +532,7 @@ namespace MediaBrowser.Api
             // no need to authenticate password for new user
             if (request.Password != null)
             {
-                await _userManager.ChangePassword(newUser, request.Password).ConfigureAwait(false);
+                await _userManager.ChangePassword(newUser, request.Password, request.Password).ConfigureAwait(false);
             }
 
             var result = _userManager.GetUserDto(newUser, Request.RemoteIp);

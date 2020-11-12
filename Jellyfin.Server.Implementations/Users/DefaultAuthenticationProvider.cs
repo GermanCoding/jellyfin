@@ -103,7 +103,7 @@ namespace Jellyfin.Server.Implementations.Users
             => !string.IsNullOrEmpty(user?.Password);
 
         /// <inheritdoc />
-        public Task ChangePassword(User user, string newPassword)
+        public Task ChangePassword(User user, string oldPassword, string newPassword)
         {
             if (string.IsNullOrEmpty(newPassword))
             {

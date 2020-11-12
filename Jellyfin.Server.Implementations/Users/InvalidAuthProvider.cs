@@ -30,7 +30,7 @@ namespace Jellyfin.Server.Implementations.Users
         }
 
         /// <inheritdoc />
-        public Task ChangePassword(User user, string newPassword)
+        public Task ChangePassword(User user, string oldPassword, string newPassword)
         {
             return Task.CompletedTask;
         }

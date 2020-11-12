@@ -120,7 +120,7 @@ namespace Jellyfin.Api.Controllers
 
             if (!string.IsNullOrEmpty(startupUserDto.Password))
             {
-                await _userManager.ChangePassword(user, startupUserDto.Password).ConfigureAwait(false);
+                await _userManager.ChangePassword(user, startupUserDto.Password, startupUserDto.Password).ConfigureAwait(false);
             }
         }
     }
