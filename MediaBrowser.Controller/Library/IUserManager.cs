@@ -109,9 +109,10 @@ namespace MediaBrowser.Controller.Library
         /// Changes the password.
         /// </summary>
         /// <param name="user">The user.</param>
+		/// <param name="oldPassword">Old password of the user.</param>
         /// <param name="newPassword">New password to use.</param>
         /// <returns>Awaitable task.</returns>
-        Task ChangePassword(User user, string newPassword);
+        Task ChangePassword(User user, string oldPassword, string newPassword);
 
         /// <summary>
         /// Changes the easy password.

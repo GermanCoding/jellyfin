@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1307
+#pragma warning disable CA1307
 
 using System;
 using System.Collections.Concurrent;
@@ -255,7 +255,7 @@ namespace Jellyfin.Server.Implementations.Users
         /// <inheritdoc/>
         public Task ResetPassword(User user)
         {
-            return ChangePassword(user, string.Empty);
+            return ChangePassword(user, string.Empty, string.Empty);
         }
 
         /// <inheritdoc/>
@@ -265,14 +265,14 @@ namespace Jellyfin.Server.Implementations.Users
         }
 
         /// <inheritdoc/>
-        public async Task ChangePassword(User user, string newPassword)
+        public async Task ChangePassword(User user, string oldPassword, string newPassword)
         {
             if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
             }
 
-            await GetAuthenticationProvider(user).ChangePassword(user, newPassword).ConfigureAwait(false);
+            await GetAuthenticationProvider(user).ChangePassword(user, oldPassword, newPassword).ConfigureAwait(false);
             await UpdateUserAsync(user).ConfigureAwait(false);
 
             await _eventManager.PublishAsync(new UserPasswordChangedEventArgs(user)).ConfigureAwait(false);
@@ -496,7 +496,7 @@ namespace Jellyfin.Server.Implementations.Users
         {
             var user = string.IsNullOrWhiteSpace(enteredUsername) ? null : GetUserByName(enteredUsername);
 
-            if (user != null && isInNetwork)
+            if (user != null)
             {
                 var passwordResetProvider = GetPasswordResetProvider(user);
                 var result = await passwordResetProvider
@@ -509,7 +509,7 @@ namespace Jellyfin.Server.Implementations.Users
 
             return new ForgotPasswordResult
             {
-                Action = ForgotPasswordAction.InNetworkRequired,
+                Action = ForgotPasswordAction.ContactAdmin,
                 PinFile = string.Empty
             };
         }

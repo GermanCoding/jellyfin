@@ -297,7 +297,7 @@ namespace Jellyfin.Api.Controllers
                     }
                 }
 
-                await _userManager.ChangePassword(user, request.NewPw).ConfigureAwait(false);
+                await _userManager.ChangePassword(user, request.CurrentPw, request.NewPw).ConfigureAwait(false);
 
                 var currentToken = (await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false)).Token;
 
@@ -478,7 +478,7 @@ namespace Jellyfin.Api.Controllers
             // no need to authenticate password for new user
             if (request.Password != null)
             {
-                await _userManager.ChangePassword(newUser, request.Password).ConfigureAwait(false);
+                await _userManager.ChangePassword(newUser, request.Password, request.Password).ConfigureAwait(false);
             }
 
             var result = _userManager.GetUserDto(newUser, HttpContext.GetNormalizedRemoteIp().ToString());
