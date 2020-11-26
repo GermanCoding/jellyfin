@@ -255,10 +255,16 @@ namespace MediaBrowser.Model.Configuration
         public string[] UninstalledPlugins { get; set; }
 
         /// <summary>
+        /// Gets or sets the number of days we should retain activity logs.
+        /// </summary>
+        public int? ActivityLogRetentionDays { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ServerConfiguration" /> class.
         /// </summary>
         public ServerConfiguration()
         {
+            ActivityLogRetentionDays = 30;
             UninstalledPlugins = Array.Empty<string>();
             RemoteIPFilter = Array.Empty<string>();
             LocalNetworkSubnets = Array.Empty<string>();

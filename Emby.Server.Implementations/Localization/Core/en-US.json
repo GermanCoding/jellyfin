@@ -95,6 +95,8 @@
     "TasksMaintenanceCategory": "Maintenance",
     "TasksLibraryCategory": "Library",
     "TasksApplicationCategory": "Application",
+    "TaskCleanActivityLog": "Clean Activity Log",
+    "TaskCleanActivityLogDescription": "Deletes activity log entries older than the configured age.",
     "TasksChannelsCategory": "Internet Channels",
     "TaskCleanCache": "Clean Cache Directory",
     "TaskCleanCacheDescription": "Deletes cache files no longer needed by the system.",

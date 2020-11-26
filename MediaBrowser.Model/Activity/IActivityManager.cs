@@ -17,6 +17,13 @@ namespace MediaBrowser.Model.Activity
 
         Task CreateAsync(ActivityLog entry);
 
+        /// <summary>
+        /// Remove all activity logs before the specified date.
+        /// </summary>
+        /// <param name="startDate">Activity log start date.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task CleanAsync(DateTime startDate);
+
         QueryResult<ActivityLogEntry> GetPagedResult(int? startIndex, int? limit);
 
         QueryResult<ActivityLogEntry> GetPagedResult(

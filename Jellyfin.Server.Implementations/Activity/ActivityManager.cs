@@ -78,6 +78,18 @@ namespace Jellyfin.Server.Implementations.Activity
         }
 
         /// <inheritdoc/>
+        public async Task CleanAsync(DateTime startDate)
+        {
+            await using var dbContext = _provider.CreateContext();
+            var entries = dbContext.ActivityLogs
+                .AsQueryable()
+                .Where(entry => entry.DateCreated <= startDate);
+
+            dbContext.RemoveRange(entries);
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
         public QueryResult<ActivityLogEntry> GetPagedResult(int? startIndex, int? limit)
         {
             return GetPagedResult(logs => logs, startIndex, limit);
