@@ -64,8 +64,8 @@ namespace MediaBrowser.Api.Playback.Progressive
     /// <summary>
     /// Class VideoService.
     /// </summary>
-    // TODO: In order to autheneticate this in the future, Dlna playback will require updating
-    //[Authenticated]
+    // TODO: This apparently breaks DLNA playback. We don't care about that.
+    [Authenticated]
     public class VideoService : BaseProgressiveStreamingService
     {
         public VideoService(

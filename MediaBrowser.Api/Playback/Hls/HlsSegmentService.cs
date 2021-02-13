@@ -16,7 +16,8 @@ namespace MediaBrowser.Api.Playback.Hls
     /// Class GetHlsAudioSegment.
     /// </summary>
     // Can't require authentication just yet due to seeing some requests come from Chrome without full query string
-    //[Authenticated]
+    // TODO: Or maybe we can?
+    [Authenticated]
     [Route("/Audio/{Id}/hls/{SegmentId}/stream.mp3", "GET")]
     [Route("/Audio/{Id}/hls/{SegmentId}/stream.aac", "GET")]
     public class GetHlsAudioSegmentLegacy
@@ -69,7 +70,8 @@ namespace MediaBrowser.Api.Playback.Hls
     /// Class GetHlsVideoSegment.
     /// </summary>
     // Can't require authentication just yet due to seeing some requests come from Chrome without full query string
-    //[Authenticated]
+    // TODO: Or maybe we can?
+    [Authenticated]
     [Route("/Videos/{Id}/hls/{PlaylistId}/{SegmentId}.{SegmentContainer}", "GET")]
     public class GetHlsVideoSegmentLegacy : VideoStreamRequest
     {
