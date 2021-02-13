@@ -193,6 +193,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">File returned.</response>
         /// <returns>A <see cref="FileContentResult"/> with the subtitle file.</returns>
         [HttpGet("Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesFile("text/*")]
         public async Task<ActionResult> GetSubtitle(
@@ -262,6 +263,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">File returned.</response>
         /// <returns>A <see cref="FileContentResult"/> with the subtitle file.</returns>
         [HttpGet("Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/{startPositionTicks}/Stream.{format}")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesFile("text/*")]
         public Task<ActionResult> GetSubtitleWithTicks(
