@@ -314,6 +314,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="FileResult"/> containing the audio file.</returns>
         [HttpGet("{itemId}/stream")]
         [HttpHead("{itemId}/stream", Name = "HeadVideoStream")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesVideoFile]
         public async Task<ActionResult> GetVideoStream(
@@ -568,6 +569,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="FileResult"/> containing the audio file.</returns>
         [HttpGet("{itemId}/stream.{container}")]
         [HttpHead("{itemId}/stream.{container}", Name = "HeadVideoStreamByContainer")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesVideoFile]
         public Task<ActionResult> GetVideoStreamByContainer(
