@@ -67,6 +67,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">User views returned.</response>
         /// <returns>An <see cref="OkResult"/> containing the user views.</returns>
         [HttpGet("Users/{userId}/Views")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public QueryResult<BaseItemDto> GetUserViews(
             [FromRoute, Required] Guid userId,
@@ -119,6 +120,7 @@ namespace Jellyfin.Api.Controllers
         /// or a <see cref="NotFoundResult"/> if user not found.
         /// </returns>
         [HttpGet("Users/{userId}/GroupingOptions")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<SpecialViewOptionDto>> GetGroupingOptions([FromRoute, Required] Guid userId)

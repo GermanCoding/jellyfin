@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Jellyfin.Api.Attributes;
+using Jellyfin.Api.Constants;
 using Jellyfin.Api.Helpers;
 using Jellyfin.Api.Models.StreamingDtos;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Model.Dlna;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +18,7 @@ namespace Jellyfin.Api.Controllers
     /// The audio controller.
     /// </summary>
     // TODO: In order to authenticate this in the future, Dlna playback will require updating
+    [Authorize(Policy = Policies.DefaultAuthorization)]
     public class AudioController : BaseJellyfinApiController
     {
         private readonly AudioHelper _audioHelper;

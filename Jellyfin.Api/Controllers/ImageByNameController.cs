@@ -22,6 +22,7 @@ namespace Jellyfin.Api.Controllers
     ///     Images By Name Controller.
     /// </summary>
     [Route("Images")]
+    [Authorize(Policy = Policies.DefaultAuthorization)]
     public class ImageByNameController : BaseJellyfinApiController
     {
         private readonly IServerApplicationPaths _applicationPaths;
@@ -62,7 +63,6 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Image not found.</response>
         /// <returns>A <see cref="FileStreamResult"/> containing the image contents on success, or a <see cref="NotFoundResult"/> if the image could not be found.</returns>
         [HttpGet("General/{name}/{type}")]
-        [AllowAnonymous]
         [Produces(MediaTypeNames.Application.Octet)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -113,7 +113,6 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Image not found.</response>
         /// <returns>A <see cref="FileStreamResult"/> containing the image contents on success, or a <see cref="NotFoundResult"/> if the image could not be found.</returns>
         [HttpGet("Ratings/{theme}/{name}")]
-        [AllowAnonymous]
         [Produces(MediaTypeNames.Application.Octet)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -147,7 +146,6 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Image not found.</response>
         /// <returns>A <see cref="FileStreamResult"/> containing the image contents on success, or a <see cref="NotFoundResult"/> if the image could not be found.</returns>
         [HttpGet("MediaInfo/{theme}/{name}")]
-        [AllowAnonymous]
         [Produces(MediaTypeNames.Application.Octet)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -165,6 +165,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Plugin not found or plugin configuration not found.</response>
         /// <returns>Plugin configuration.</returns>
         [HttpGet("{pluginId}/Configuration")]
+        [Authorize(Policy = Policies.RequiresElevation)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<BasePluginConfiguration> GetPluginConfiguration([FromRoute, Required] Guid pluginId)
@@ -189,6 +190,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Plugin not found or plugin does not have configuration.</response>
         /// <returns>An <see cref="NoContentResult"/> on success, or a <see cref="NotFoundResult"/> if the plugin could not be found.</returns>
         [HttpPost("{pluginId}/Configuration")]
+        [Authorize(Policy = Policies.RequiresElevation)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdatePluginConfiguration([FromRoute, Required] Guid pluginId)
@@ -218,10 +220,10 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">Plugin image returned.</response>
         /// <returns>Plugin's image.</returns>
         [HttpGet("{pluginId}/{version}/Image")]
+        [Authorize(Policy = Policies.RequiresElevation)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
-        [AllowAnonymous]
         public ActionResult GetPluginImage([FromRoute, Required] Guid pluginId, [FromRoute, Required] Version version)
         {
             var plugin = _pluginManager.GetPlugin(pluginId, version);
@@ -248,6 +250,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Plugin not found.</response>
         /// <returns>A <see cref="PluginManifest"/> on success, or a <see cref="NotFoundResult"/> if the plugin could not be found.</returns>
         [HttpPost("{pluginId}/Manifest")]
+        [Authorize(Policy = Policies.RequiresElevation)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<PluginManifest> GetPluginManifest([FromRoute, Required] Guid pluginId)
