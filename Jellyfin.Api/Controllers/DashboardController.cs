@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Mime;
 using Jellyfin.Api.Attributes;
+using Jellyfin.Api.Constants;
 using Jellyfin.Api.Models;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller;
@@ -12,6 +13,7 @@ using MediaBrowser.Controller.Extensions;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Net;
 using MediaBrowser.Model.Plugins;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +27,7 @@ namespace Jellyfin.Api.Controllers
     /// The dashboard controller.
     /// </summary>
     [Route("")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     public class DashboardController : BaseJellyfinApiController
     {
         private readonly ILogger<DashboardController> _logger;

@@ -153,6 +153,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Remote image not found.</response>
         /// <returns>Image Stream.</returns>
         [HttpGet("Images/Remote")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [Produces(MediaTypeNames.Application.Octet)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

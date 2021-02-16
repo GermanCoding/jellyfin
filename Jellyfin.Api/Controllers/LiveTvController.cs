@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
@@ -1169,6 +1169,7 @@ namespace Jellyfin.Api.Controllers
         /// or a <see cref="NotFoundResult"/> if recording not found.
         /// </returns>
         [HttpGet("LiveRecordings/{recordingId}/stream")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesVideoFile]
@@ -1200,6 +1201,7 @@ namespace Jellyfin.Api.Controllers
         /// or a <see cref="NotFoundResult"/> if stream not found.
         /// </returns>
         [HttpGet("LiveStreamFiles/{streamId}/stream.{container}")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesVideoFile]
