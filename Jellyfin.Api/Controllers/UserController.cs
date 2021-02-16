@@ -215,6 +215,23 @@ namespace Jellyfin.Api.Controllers
                     Username = request.Username
                 }).ConfigureAwait(false);
 
+                /* Different approach in Emby.Server.Implementations.HttpServer.Security.AuthorizationContext
+                if (result.AccessToken != null)
+                {
+                    var resp = Response;
+                    DateTime oneYear = DateTime.Now.AddYears(1);
+                    CookieOptions options = new CookieOptions { HttpOnly = true, Secure = true, IsEssential = true, Expires = oneYear, SameSite = SameSiteMode.Strict };
+                    // TODO: We probably need more data in the cookie?
+                    // TODO: We need a way for "do not remember me" quick-clearing cookies
+                    // probably by adding a new parameter "remember me" to AuthenticateUserByName request body
+                    Response.Cookies.Append("Jellyfin-Auth", result.AccessToken, options);
+                }
+                */
+
+                // Delete any potentially old cookie
+                // New cookie should get set on next request
+                Response.Cookies.Delete("Jellyfin-Auth");
+
                 return result;
             }
             catch (SecurityException e)
