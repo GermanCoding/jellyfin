@@ -20,6 +20,7 @@ namespace Jellyfin.Api.Controllers
     /// The dashboard controller.
     /// </summary>
     [Route("")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     public class DashboardController : BaseJellyfinApiController
     {
         private readonly ILogger<DashboardController> _logger;

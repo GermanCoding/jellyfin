@@ -80,7 +80,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">Users returned.</response>
         /// <returns>An <see cref="IEnumerable{UserDto}"/> containing the users.</returns>
         [HttpGet]
-        [Authorize(Policy = Policies.DefaultAuthorization)]
+        [Authorize(Policy = Policies.RequiresElevation)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
             [FromQuery] bool? isHidden,
@@ -116,6 +116,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">User not found.</response>
         /// <returns>An <see cref="UserDto"/> with information about the user or a <see cref="NotFoundResult"/> if the user was not found.</returns>
         [HttpGet("{userId}")]
+        [Authorize(Policy = Policies.DefaultAuthorization)]
         [Authorize(Policy = Policies.IgnoreParentalControl)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
