@@ -16,6 +16,8 @@ namespace Emby.Server.Implementations.HttpServer.Security
     {
         private readonly IAuthenticationRepository _authRepo;
         private readonly IUserManager _userManager;
+        // Setting no expires attribute should make this cookie short lived enough
+        private readonly CookieOptions _options = new CookieOptions { HttpOnly = true, Secure = true, IsEssential = true, SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict };
 
         public AuthorizationContext(IAuthenticationRepository authRepo, IUserManager userManager)
         {
@@ -208,11 +210,51 @@ namespace Emby.Server.Implementations.HttpServer.Security
         /// <returns>Dictionary{System.StringSystem.String}.</returns>
         private Dictionary<string, string> GetAuthorizationDictionary(HttpContext httpReq)
         {
+            // TODO: Please be aware that this code is duplicated (below, same function, but different arguments!)
+
             var auth = httpReq.Request.Headers["X-Emby-Authorization"];
 
             if (string.IsNullOrEmpty(auth))
             {
                 auth = httpReq.Request.Headers[HeaderNames.Authorization];
+            }
+
+            httpReq.Request.Cookies.TryGetValue("Jellyfin-Auth", out var new_auth);
+
+            if (!string.IsNullOrEmpty(auth))
+            {
+                bool cookieNeedsUpdating = false;
+
+                if (!string.IsNullOrEmpty(new_auth))
+                {
+                    // Both cookie and X-Emby-Auth present. Check if they match
+                    if (!string.Equals(auth, new_auth, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Cookie doesn't match X-Emby, seems to need updating
+                        cookieNeedsUpdating = true;
+                    }
+                } else
+                {
+                    // X-Emby-Auth is present, but no cookie. Try to fix that.
+                    cookieNeedsUpdating = true;
+                }
+
+                if (cookieNeedsUpdating)
+                {
+                    var resp = httpReq.Response;
+                    if (!resp.Headers.ContainsKey("Set-Cookie"))
+                    {
+                        resp.Cookies.Append("Jellyfin-Auth", auth, _options);
+                    }
+                }
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(new_auth))
+                {
+                    // NEW Cookie based auth
+                    auth = new_auth;
+                }
             }
 
             return GetAuthorization(auth);
@@ -230,6 +272,45 @@ namespace Emby.Server.Implementations.HttpServer.Security
             if (string.IsNullOrEmpty(auth))
             {
                 auth = httpReq.Headers[HeaderNames.Authorization];
+            }
+
+            httpReq.Cookies.TryGetValue("Jellyfin-Auth", out var new_auth);
+
+            if (!string.IsNullOrEmpty(auth))
+            {
+                bool cookieNeedsUpdating = false;
+
+                if (!string.IsNullOrEmpty(new_auth))
+                {
+                    // Both cookie and X-Emby-Auth present. Check if they match
+                    if (!string.Equals(auth, new_auth, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Cookie doesn't match X-Emby, seems to need updating
+                        cookieNeedsUpdating = true;
+                    }
+                }
+                else
+                {
+                    // X-Emby-Auth is present, but no cookie. Try to fix that.
+                    cookieNeedsUpdating = true;
+                }
+
+                if (cookieNeedsUpdating)
+                {
+                    var resp = httpReq.HttpContext.Response;
+                    if (!resp.Headers.ContainsKey("Set-Cookie"))
+                    {
+                        resp.Cookies.Append("Jellyfin-Auth", auth, _options);
+                    }
+                }
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(new_auth))
+                {
+                    // NEW Cookie based auth
+                    auth = new_auth;
+                }
             }
 
             return GetAuthorization(auth);

@@ -457,6 +457,8 @@ namespace Jellyfin.Api.Controllers
         {
             AuthorizationInfo auth = _authContext.GetAuthorizationInfo(Request);
 
+            Response.Cookies.Delete("Jellyfin-Auth");
+
             _sessionManager.Logout(auth.Token);
             return NoContent();
         }
