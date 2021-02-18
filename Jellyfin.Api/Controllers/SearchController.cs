@@ -13,6 +13,7 @@ using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Search;
 using Microsoft.AspNetCore.Authorization;
@@ -32,6 +33,7 @@ namespace Jellyfin.Api.Controllers
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IImageProcessor _imageProcessor;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchController"/> class.
@@ -40,16 +42,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of <see cref="IDtoService"/> interface.</param>
         /// <param name="imageProcessor">Instance of <see cref="IImageProcessor"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public SearchController(
             ISearchEngine searchEngine,
             ILibraryManager libraryManager,
             IDtoService dtoService,
-            IImageProcessor imageProcessor)
+            IImageProcessor imageProcessor,
+            IAuthorizationContext authContext)
         {
             _searchEngine = searchEngine;
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _imageProcessor = imageProcessor;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -98,6 +103,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool includeStudios = true,
             [FromQuery] bool includeArtists = true)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var result = _searchEngine.GetSearchHints(new SearchQuery
             {
                 Limit = limit,

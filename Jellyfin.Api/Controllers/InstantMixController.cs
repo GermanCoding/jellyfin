@@ -4,11 +4,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Entities;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -30,6 +32,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IDtoService _dtoService;
         private readonly ILibraryManager _libraryManager;
         private readonly IMusicManager _musicManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InstantMixController"/> class.
@@ -38,16 +41,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="musicManager">Instance of the <see cref="IMusicManager"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public InstantMixController(
             IUserManager userManager,
             IDtoService dtoService,
             IMusicManager musicManager,
-            ILibraryManager libraryManager)
+            ILibraryManager libraryManager,
+            IAuthorizationContext authContext)
         {
             _userManager = userManager;
             _dtoService = dtoService;
             _musicManager = musicManager;
             _libraryManager = libraryManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -75,6 +81,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
@@ -111,6 +125,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var album = _libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
@@ -147,6 +169,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var playlist = (Playlist)_libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
@@ -183,6 +213,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -218,6 +256,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
@@ -254,6 +300,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
@@ -290,6 +344,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)

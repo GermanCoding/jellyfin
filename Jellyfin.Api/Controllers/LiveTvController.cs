@@ -50,6 +50,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IMediaSourceManager _mediaSourceManager;
         private readonly IConfigurationManager _configurationManager;
         private readonly TranscodingJobHelper _transcodingJobHelper;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LiveTvController"/> class.
@@ -63,6 +64,7 @@ namespace Jellyfin.Api.Controllers
         /// <param name="mediaSourceManager">Instance of the <see cref="IMediaSourceManager"/> interface.</param>
         /// <param name="configurationManager">Instance of the <see cref="IConfigurationManager"/> interface.</param>
         /// <param name="transcodingJobHelper">Instance of the <see cref="TranscodingJobHelper"/> class.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public LiveTvController(
             ILiveTvManager liveTvManager,
             IUserManager userManager,
@@ -72,7 +74,8 @@ namespace Jellyfin.Api.Controllers
             ISessionContext sessionContext,
             IMediaSourceManager mediaSourceManager,
             IConfigurationManager configurationManager,
-            TranscodingJobHelper transcodingJobHelper)
+            TranscodingJobHelper transcodingJobHelper,
+            IAuthorizationContext authContext)
         {
             _liveTvManager = liveTvManager;
             _userManager = userManager;
@@ -83,6 +86,7 @@ namespace Jellyfin.Api.Controllers
             _mediaSourceManager = mediaSourceManager;
             _configurationManager = configurationManager;
             _transcodingJobHelper = transcodingJobHelper;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -154,6 +158,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool enableFavoriteSorting = false,
             [FromQuery] bool addCurrentProgram = true)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -213,6 +225,14 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         public ActionResult<BaseItemDto> GetChannel([FromRoute, Required] Guid channelId, [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -273,6 +293,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? isLibraryItem,
             [FromQuery] bool enableTotalRecordCount = true)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -383,6 +411,14 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         public ActionResult<QueryResult<BaseItemDto>> GetRecordingFolders([FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -409,6 +445,14 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         public ActionResult<BaseItemDto> GetRecording([FromRoute, Required] Guid recordingId, [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -566,6 +610,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
             [FromQuery] bool enableTotalRecordCount = true)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -622,6 +674,14 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         public async Task<ActionResult<QueryResult<BaseItemDto>>> GetPrograms([FromBody] GetProgramsDto body)
         {
+            if (!body.UserId.Equals(Guid.Empty))
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, body.UserId, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = body.UserId.Equals(Guid.Empty) ? null : _userManager.GetUserById(body.UserId);
 
             var query = new InternalItemsQuery(user)
@@ -705,6 +765,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? enableUserData,
             [FromQuery] bool enableTotalRecordCount = true)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -743,6 +811,14 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string programId,
             [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;

@@ -12,6 +12,7 @@ using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Channels;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Querying;
@@ -29,16 +30,19 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IChannelManager _channelManager;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChannelsController"/> class.
         /// </summary>
         /// <param name="channelManager">Instance of the <see cref="IChannelManager"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
-        public ChannelsController(IChannelManager channelManager, IUserManager userManager)
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
+        public ChannelsController(IChannelManager channelManager, IUserManager userManager, IAuthorizationContext authContext)
         {
             _channelManager = channelManager;
             _userManager = userManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -62,6 +66,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? supportsMediaDeletion,
             [FromQuery] bool? isFavorite)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             return _channelManager.GetChannels(new ChannelQuery
             {
                 Limit = limit,
@@ -126,6 +138,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? sortBy,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;
@@ -200,6 +220,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] Guid[] channelIds)
         {
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var user = userId.HasValue && !userId.Equals(Guid.Empty)
                 ? _userManager.GetUserById(userId.Value)
                 : null;

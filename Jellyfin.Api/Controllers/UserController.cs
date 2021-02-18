@@ -112,6 +112,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<UserDto> GetUserById([FromRoute, Required] Guid userId)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             if (user == null)

@@ -74,6 +74,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] string[] presetViews,
             [FromQuery] bool includeHidden = false)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var query = new UserViewQuery
             {
                 UserId = userId,
@@ -134,6 +139,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<SpecialViewOptionDto>> GetGroupingOptions([FromRoute, Required] Guid userId)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             if (user == null)
             {

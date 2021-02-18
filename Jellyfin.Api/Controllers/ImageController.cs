@@ -1465,6 +1465,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? foregroundLayer,
             [FromQuery] int? imageIndex)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             if (user == null)
             {
@@ -1562,6 +1567,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? backgroundColor,
             [FromQuery] string? foregroundLayer)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             if (user?.ProfileImage == null)
             {

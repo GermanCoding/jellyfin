@@ -77,6 +77,11 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] Guid itemId,
             [FromQuery, ModelBinder(typeof(LegacyDateTimeModelBinder))] DateTime? datePlayed)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             var session = RequestHelpers.GetSession(_sessionManager, _authContext, Request);
             var dto = UpdatePlayedStatus(user, itemId, true, datePlayed);
@@ -100,6 +105,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<UserItemDataDto> MarkUnplayedItem([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             var session = RequestHelpers.GetSession(_sessionManager, _authContext, Request);
             var dto = UpdatePlayedStatus(user, itemId, false, null);
@@ -207,6 +217,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string playSessionId,
             [FromQuery] bool canSeek = false)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var playbackStartInfo = new PlaybackStartInfo
             {
                 CanSeek = canSeek,
@@ -261,6 +276,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool isPaused = false,
             [FromQuery] bool isMuted = false)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var playbackProgressInfo = new PlaybackProgressInfo
             {
                 ItemId = itemId,
@@ -307,6 +327,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? liveStreamId,
             [FromQuery] string? playSessionId)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var playbackStopInfo = new PlaybackStopInfo
             {
                 ItemId = itemId,

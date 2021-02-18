@@ -72,6 +72,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<PlaybackInfoResponse>> GetPlaybackInfo([FromRoute, Required] Guid itemId, [FromQuery, Required] Guid userId)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return await _mediaInfoHelper.GetPlaybackInfo(
                     itemId,
                     userId)
@@ -153,6 +158,14 @@ namespace Jellyfin.Api.Controllers
             enableTranscoding ??= playbackInfoDto?.EnableTranscoding ?? true;
             allowVideoStreamCopy ??= playbackInfoDto?.AllowVideoStreamCopy ?? true;
             allowAudioStreamCopy ??= playbackInfoDto?.AllowAudioStreamCopy ?? true;
+
+            if (userId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.GetValueOrDefault(), false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var info = await _mediaInfoHelper.GetPlaybackInfo(
                     itemId,
@@ -264,6 +277,15 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? enableDirectPlay,
             [FromQuery] bool? enableDirectStream)
         {
+            Guid? checkUserId = userId ?? openLiveStreamDto?.UserId;
+            if (checkUserId.HasValue)
+            {
+                if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, checkUserId.Value, false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var request = new LiveStreamRequest
             {
                 OpenToken = openToken ?? openLiveStreamDto?.OpenToken,
@@ -293,6 +315,7 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult> CloseLiveStream([FromQuery, Required] string liveStreamId)
         {
+            // TODO: Not user-id authenticated
             await _mediaSourceManager.CloseLiveStream(liveStreamId).ConfigureAwait(false);
             return NoContent();
         }

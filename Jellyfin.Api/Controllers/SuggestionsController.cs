@@ -9,6 +9,7 @@ using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,7 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IDtoService _dtoService;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
         private readonly ILibraryManager _libraryManager;
 
         /// <summary>
@@ -33,14 +35,17 @@ namespace Jellyfin.Api.Controllers
         /// </summary>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         public SuggestionsController(
             IDtoService dtoService,
             IUserManager userManager,
+            IAuthorizationContext authContext,
             ILibraryManager libraryManager)
         {
             _dtoService = dtoService;
             _userManager = userManager;
+            _authContext = authContext;
             _libraryManager = libraryManager;
         }
 
@@ -65,6 +70,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? limit,
             [FromQuery] bool enableTotalRecordCount = false)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = !userId.Equals(Guid.Empty) ? _userManager.GetUserById(userId) : null;
 
             var dtoOptions = new DtoOptions().AddClientFields(Request);

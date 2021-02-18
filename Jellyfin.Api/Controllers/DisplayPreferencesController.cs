@@ -4,10 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Jellyfin.Api.Constants;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Controller;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,16 +26,19 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IDisplayPreferencesManager _displayPreferencesManager;
         private readonly ILogger<DisplayPreferencesController> _logger;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DisplayPreferencesController"/> class.
         /// </summary>
         /// <param name="displayPreferencesManager">Instance of <see cref="IDisplayPreferencesManager"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{DisplayPreferencesController}"/> interface.</param>
-        public DisplayPreferencesController(IDisplayPreferencesManager displayPreferencesManager, ILogger<DisplayPreferencesController> logger)
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
+        public DisplayPreferencesController(IDisplayPreferencesManager displayPreferencesManager, ILogger<DisplayPreferencesController> logger, IAuthorizationContext authContext)
         {
             _displayPreferencesManager = displayPreferencesManager;
             _logger = logger;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -52,6 +57,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, Required] Guid userId,
             [FromQuery, Required] string client)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             if (!Guid.TryParse(displayPreferencesId, out var itemId))
             {
                 itemId = displayPreferencesId.GetMD5();
@@ -121,6 +131,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, Required] string client,
             [FromBody, Required] DisplayPreferencesDto displayPreferences)
         {
+            if (!RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             HomeSectionType[] defaults =
             {
                 HomeSectionType.SmallLibraryTiles,
