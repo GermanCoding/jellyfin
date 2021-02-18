@@ -49,6 +49,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IMediaSourceManager _mediaSourceManager;
         private readonly IConfigurationManager _configurationManager;
         private readonly TranscodingJobHelper _transcodingJobHelper;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LiveTvController"/> class.
@@ -62,6 +63,7 @@ namespace Jellyfin.Api.Controllers
         /// <param name="mediaSourceManager">Instance of the <see cref="IMediaSourceManager"/> interface.</param>
         /// <param name="configurationManager">Instance of the <see cref="IConfigurationManager"/> interface.</param>
         /// <param name="transcodingJobHelper">Instance of the <see cref="TranscodingJobHelper"/> class.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public LiveTvController(
             ILiveTvManager liveTvManager,
             IUserManager userManager,
@@ -71,7 +73,8 @@ namespace Jellyfin.Api.Controllers
             ISessionContext sessionContext,
             IMediaSourceManager mediaSourceManager,
             IConfigurationManager configurationManager,
-            TranscodingJobHelper transcodingJobHelper)
+            TranscodingJobHelper transcodingJobHelper,
+            IAuthorizationContext authContext)
         {
             _liveTvManager = liveTvManager;
             _userManager = userManager;
@@ -82,6 +85,7 @@ namespace Jellyfin.Api.Controllers
             _mediaSourceManager = mediaSourceManager;
             _configurationManager = configurationManager;
             _transcodingJobHelper = transcodingJobHelper;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -130,7 +134,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Channels")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Policy = Policies.LiveTvAccess)]
-        public ActionResult<QueryResult<BaseItemDto>> GetLiveTvChannels(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetLiveTvChannelsAsync(
             [FromQuery] ChannelType? type,
             [FromQuery] Guid? userId,
             [FromQuery] int? startIndex,
@@ -153,6 +157,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool enableFavoriteSorting = false,
             [FromQuery] bool addCurrentProgram = true)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -209,7 +221,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Channels/{channelId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Policy = Policies.LiveTvAccess)]
-        public ActionResult<BaseItemDto> GetChannel([FromRoute, Required] Guid channelId, [FromQuery] Guid? userId)
+        public async Task<ActionResult<BaseItemDto>> GetChannelAsync([FromRoute, Required] Guid channelId, [FromQuery] Guid? userId)
         {
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -217,6 +229,14 @@ namespace Jellyfin.Api.Controllers
             var item = channelId.Equals(default)
                 ? _libraryManager.GetUserRootFolder()
                 : _libraryManager.GetItemById(channelId);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var dtoOptions = new DtoOptions()
                 .AddClientFields(Request);
@@ -250,7 +270,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Recordings")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Policy = Policies.LiveTvAccess)]
-        public ActionResult<QueryResult<BaseItemDto>> GetRecordings(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetRecordingsAsync(
             [FromQuery] string? channelId,
             [FromQuery] Guid? userId,
             [FromQuery] int? startIndex,
@@ -271,6 +291,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? isLibraryItem,
             [FromQuery] bool enableTotalRecordCount = true)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -380,11 +408,20 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Recordings/Folders")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Policy = Policies.LiveTvAccess)]
-        public ActionResult<QueryResult<BaseItemDto>> GetRecordingFolders([FromQuery] Guid? userId)
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetRecordingFoldersAsync([FromQuery] Guid? userId)
         {
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var folders = _liveTvManager.GetRecordingFolders(user);
 
             var returnArray = _dtoService.GetBaseItemDtos(folders, new DtoOptions(), user);
@@ -402,12 +439,20 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Recordings/{recordingId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Policy = Policies.LiveTvAccess)]
-        public ActionResult<BaseItemDto> GetRecording([FromRoute, Required] Guid recordingId, [FromQuery] Guid? userId)
+        public async Task<ActionResult<BaseItemDto>> GetRecordingAsync([FromRoute, Required] Guid recordingId, [FromQuery] Guid? userId)
         {
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
             var item = recordingId.Equals(default) ? _libraryManager.GetUserRootFolder() : _libraryManager.GetItemById(recordingId);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var dtoOptions = new DtoOptions()
                 .AddClientFields(Request);
@@ -564,6 +609,14 @@ namespace Jellyfin.Api.Controllers
                 ? null
                 : _userManager.GetUserById(userId.Value);
 
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var query = new InternalItemsQuery(user)
             {
                 ChannelIds = channelIds,
@@ -617,6 +670,14 @@ namespace Jellyfin.Api.Controllers
         public async Task<ActionResult<QueryResult<BaseItemDto>>> GetPrograms([FromBody] GetProgramsDto body)
         {
             var user = body.UserId.Equals(default) ? null : _userManager.GetUserById(body.UserId);
+
+            if (!body.UserId.Equals(Guid.Empty))
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, body.UserId, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var query = new InternalItemsQuery(user)
             {
@@ -703,6 +764,14 @@ namespace Jellyfin.Api.Controllers
                 ? null
                 : _userManager.GetUserById(userId.Value);
 
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var query = new InternalItemsQuery(user)
             {
                 IsAiring = isAiring,
@@ -740,6 +809,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             return await _liveTvManager.GetProgram(programId, CancellationToken.None, user).ConfigureAwait(false);
         }

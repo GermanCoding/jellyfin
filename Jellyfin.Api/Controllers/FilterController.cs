@@ -1,11 +1,15 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Authorization;
@@ -23,16 +27,19 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly ILibraryManager _libraryManager;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FilterController"/> class.
         /// </summary>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
-        public FilterController(ILibraryManager libraryManager, IUserManager userManager)
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
+        public FilterController(ILibraryManager libraryManager, IUserManager userManager, IAuthorizationContext authContext)
         {
             _libraryManager = libraryManager;
             _userManager = userManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -46,7 +53,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>Legacy query filters.</returns>
         [HttpGet("Items/Filters")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryFiltersLegacy> GetQueryFiltersLegacy(
+        public async Task<ActionResult<QueryFiltersLegacy>> GetQueryFiltersLegacyAsync(
             [FromQuery] Guid? userId,
             [FromQuery] Guid? parentId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] BaseItemKind[] includeItemTypes,
@@ -55,6 +62,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             BaseItem? item = null;
             if (includeItemTypes.Length != 1
@@ -132,7 +147,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>Query filters.</returns>
         [HttpGet("Items/Filters2")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryFilters> GetQueryFilters(
+        public async Task<ActionResult<QueryFilters>> GetQueryFiltersAsync(
             [FromQuery] Guid? userId,
             [FromQuery] Guid? parentId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] BaseItemKind[] includeItemTypes,
@@ -147,6 +162,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             BaseItem? parentItem = null;
             if (includeItemTypes.Length == 1

@@ -62,20 +62,35 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Sessions")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<SessionInfo>> GetSessions(
+        public async Task<ActionResult<IEnumerable<SessionInfo>>> GetSessionsAsync(
             [FromQuery] Guid? controllableByUserId,
             [FromQuery] string? deviceId,
             [FromQuery] int? activeWithinSeconds)
         {
             var result = _sessionManager.Sessions;
+            // Ensure that the session gets filtered, if the user is not an admin (non-admin users shall not see all sessions)
+            bool filtered = false;
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(deviceId))
             {
+                if (!(authInfo.DeviceId.Equals(deviceId, StringComparison.OrdinalIgnoreCase) || authInfo.User.HasPermission(PermissionKind.IsAdministrator)))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+
+                filtered = true;
                 result = result.Where(i => string.Equals(i.DeviceId, deviceId, StringComparison.OrdinalIgnoreCase));
             }
 
             if (controllableByUserId.HasValue && !controllableByUserId.Equals(default))
             {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, (Guid)controllableByUserId, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+
+                filtered = true;
                 result = result.Where(i => i.SupportsRemoteControl);
 
                 var user = _userManager.GetUserById(controllableByUserId.Value);
@@ -110,6 +125,11 @@ namespace Jellyfin.Api.Controllers
                 });
             }
 
+            if (!(filtered || authInfo.User.HasPermission(PermissionKind.IsAdministrator)))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return Ok(result);
         }
 
@@ -131,6 +151,12 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, Required] string itemId,
             [FromQuery, Required] string itemName)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var command = new BrowseRequest
             {
                 ItemId = itemId,
@@ -174,6 +200,12 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? subtitleStreamIndex,
             [FromQuery] int? startIndex)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var playRequest = new PlayRequest
             {
                 ItemIds = itemIds,
@@ -213,6 +245,12 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] long? seekPositionTicks,
             [FromQuery] string? controllingUserId)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             await _sessionManager.SendPlaystateCommand(
                 await RequestHelpers.GetSessionId(_sessionManager, _authContext, Request).ConfigureAwait(false),
                 sessionId,
@@ -242,6 +280,12 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string sessionId,
             [FromRoute, Required] GeneralCommandType command)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var currentSession = await RequestHelpers.GetSession(_sessionManager, _authContext, Request).ConfigureAwait(false);
             var generalCommand = new GeneralCommand
             {
@@ -268,6 +312,12 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string sessionId,
             [FromRoute, Required] GeneralCommandType command)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var currentSession = await RequestHelpers.GetSession(_sessionManager, _authContext, Request).ConfigureAwait(false);
 
             var generalCommand = new GeneralCommand
@@ -296,6 +346,12 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string sessionId,
             [FromBody, Required] GeneralCommand command)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var currentSession = await RequestHelpers.GetSession(_sessionManager, _authContext, Request)
                 .ConfigureAwait(false);
 
@@ -330,6 +386,12 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string sessionId,
             [FromBody, Required] MessageCommand command)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             if (string.IsNullOrWhiteSpace(command.Header))
             {
                 command.Header = "Message from Server";
@@ -355,10 +417,17 @@ namespace Jellyfin.Api.Controllers
         [HttpPost("Sessions/{sessionId}/User/{userId}")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public ActionResult AddUserToSession(
+        public async Task<ActionResult> AddUserToSessionAsync(
             [FromRoute, Required] string sessionId,
             [FromRoute, Required] Guid userId)
         {
+            // TODO: This may not work, depending on which client calls the endpoint?
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             _sessionManager.AddAdditionalUser(sessionId, userId);
             return NoContent();
         }
@@ -373,10 +442,16 @@ namespace Jellyfin.Api.Controllers
         [HttpDelete("Sessions/{sessionId}/User/{userId}")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public ActionResult RemoveUserFromSession(
+        public async Task<ActionResult> RemoveUserFromSessionAsync(
             [FromRoute, Required] string sessionId,
             [FromRoute, Required] Guid userId)
         {
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             _sessionManager.RemoveAdditionalUser(sessionId, userId);
             return NoContent();
         }
@@ -406,6 +481,12 @@ namespace Jellyfin.Api.Controllers
             if (string.IsNullOrWhiteSpace(id))
             {
                 id = await RequestHelpers.GetSessionId(_sessionManager, _authContext, Request).ConfigureAwait(false);
+            }
+
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, id, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
             }
 
             _sessionManager.ReportCapabilities(id, new ClientCapabilities
@@ -438,6 +519,12 @@ namespace Jellyfin.Api.Controllers
                 id = await RequestHelpers.GetSessionId(_sessionManager, _authContext, Request).ConfigureAwait(false);
             }
 
+            AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+            if (!RequestHelpers.CheckSessionAccess(_sessionManager, id, authInfo))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             _sessionManager.ReportCapabilities(id, capabilities.ToClientCapabilities());
 
             return NoContent();
@@ -457,6 +544,15 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? sessionId,
             [FromQuery, Required] string? itemId)
         {
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                AuthorizationInfo authInfo = await _authContext.GetAuthorizationInfo(HttpContext.Request).ConfigureAwait(false);
+                if (!RequestHelpers.CheckSessionAccess(_sessionManager, sessionId, authInfo))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             string session = sessionId ?? await RequestHelpers.GetSessionId(_sessionManager, _authContext, Request).ConfigureAwait(false);
 
             _sessionManager.ReportNowViewingItem(session, itemId);

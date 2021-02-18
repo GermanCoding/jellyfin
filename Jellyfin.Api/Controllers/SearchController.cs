@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
@@ -14,6 +16,7 @@ using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Search;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +36,7 @@ namespace Jellyfin.Api.Controllers
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IImageProcessor _imageProcessor;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchController"/> class.
@@ -41,16 +45,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of <see cref="IDtoService"/> interface.</param>
         /// <param name="imageProcessor">Instance of <see cref="IImageProcessor"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public SearchController(
             ISearchEngine searchEngine,
             ILibraryManager libraryManager,
             IDtoService dtoService,
-            IImageProcessor imageProcessor)
+            IImageProcessor imageProcessor,
+            IAuthorizationContext authContext)
         {
             _searchEngine = searchEngine;
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _imageProcessor = imageProcessor;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -79,7 +86,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet]
         [Description("Gets search hints based on a search term")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<SearchHintResult> Get(
+        public async Task<ActionResult<SearchHintResult>> GetAsync(
             [FromQuery] int? startIndex,
             [FromQuery] int? limit,
             [FromQuery] Guid? userId,
@@ -99,6 +106,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool includeStudios = true,
             [FromQuery] bool includeArtists = true)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var result = _searchEngine.GetSearchHints(new SearchQuery
             {
                 Limit = limit,

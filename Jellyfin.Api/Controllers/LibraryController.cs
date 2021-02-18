@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Jellyfin.Api.Attributes;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Api.Models.LibraryDtos;
 using Jellyfin.Data.Entities;
@@ -144,7 +145,7 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<ThemeMediaResult> GetThemeSongs(
+        public async Task<ActionResult<ThemeMediaResult>> GetThemeSongsAsync(
             [FromRoute, Required] Guid itemId,
             [FromQuery] Guid? userId,
             [FromQuery] bool inheritFromParent = false)
@@ -152,6 +153,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var item = itemId.Equals(default)
                 ? (userId is null || userId.Value.Equals(default)
@@ -210,7 +219,7 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<ThemeMediaResult> GetThemeVideos(
+        public async Task<ActionResult<ThemeMediaResult>> GetThemeVideosAsync(
             [FromRoute, Required] Guid itemId,
             [FromQuery] Guid? userId,
             [FromQuery] bool inheritFromParent = false)
@@ -218,6 +227,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var item = itemId.Equals(default)
                 ? (userId is null || userId.Value.Equals(default)
@@ -275,20 +292,28 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Items/{itemId}/ThemeMedia")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AllThemeMediaResult> GetThemeMedia(
+        public async Task<ActionResult<AllThemeMediaResult>> GetThemeMediaAsync(
             [FromRoute, Required] Guid itemId,
             [FromQuery] Guid? userId,
             [FromQuery] bool inheritFromParent = false)
         {
-            var themeSongs = GetThemeSongs(
-                itemId,
-                userId,
-                inheritFromParent);
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
-            var themeVideos = GetThemeVideos(
+            var themeSongs = await GetThemeSongsAsync(
                 itemId,
                 userId,
-                inheritFromParent);
+                inheritFromParent).ConfigureAwait(false);
+
+            var themeVideos = await GetThemeVideosAsync(
+                itemId,
+                userId,
+                inheritFromParent).ConfigureAwait(false);
 
             return new AllThemeMediaResult
             {
@@ -403,13 +428,21 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Items/Counts")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<ItemCounts> GetItemCounts(
+        public async Task<ActionResult<ItemCounts>> GetItemCountsAsync(
             [FromQuery] Guid? userId,
             [FromQuery] bool? isFavorite)
         {
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var counts = new ItemCounts
             {
@@ -438,8 +471,16 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<IEnumerable<BaseItemDto>> GetAncestors([FromRoute, Required] Guid itemId, [FromQuery] Guid? userId)
+        public async Task<ActionResult<IEnumerable<BaseItemDto>>> GetAncestorsAsync([FromRoute, Required] Guid itemId, [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(itemId);
 
             if (item == null)
@@ -682,7 +723,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Trailers/{itemId}/Similar", Name = "GetSimilarTrailers")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetSimilarItems(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetSimilarItemsAsync(
             [FromRoute, Required] Guid itemId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] Guid[] excludeArtistIds,
             [FromQuery] Guid? userId,
@@ -694,6 +735,14 @@ namespace Jellyfin.Api.Controllers
                     ? _libraryManager.RootFolder
                     : _libraryManager.GetUserRootFolder())
                 : _libraryManager.GetItemById(itemId);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             if (item is Episode || (item is IItemByName && item is not MusicArtist))
             {

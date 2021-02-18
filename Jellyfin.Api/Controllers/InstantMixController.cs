@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Entities;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -29,6 +32,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IDtoService _dtoService;
         private readonly ILibraryManager _libraryManager;
         private readonly IMusicManager _musicManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InstantMixController"/> class.
@@ -37,16 +41,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="musicManager">Instance of the <see cref="IMusicManager"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public InstantMixController(
             IUserManager userManager,
             IDtoService dtoService,
             IMusicManager musicManager,
-            ILibraryManager libraryManager)
+            ILibraryManager libraryManager,
+            IAuthorizationContext authContext)
         {
             _userManager = userManager;
             _dtoService = dtoService;
             _musicManager = musicManager;
             _libraryManager = libraryManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -64,7 +71,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("Songs/{id}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromSong(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromSongAsync(
             [FromRoute, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -74,6 +81,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -100,7 +115,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("Albums/{id}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromAlbum(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromAlbumAsync(
             [FromRoute, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -110,6 +125,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var album = _libraryManager.GetItemById(id);
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -136,7 +159,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("Playlists/{id}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromPlaylist(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromPlaylistAsync(
             [FromRoute, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -146,6 +169,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var playlist = (Playlist)_libraryManager.GetItemById(id);
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -172,7 +203,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("MusicGenres/{name}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromMusicGenreByName(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromMusicGenreByNameAsync(
             [FromRoute, Required] string name,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -185,6 +216,15 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -207,7 +247,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("Artists/{id}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromArtists(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromArtistsAsync(
             [FromRoute, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -217,6 +257,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -243,7 +291,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the playlist items.</returns>
         [HttpGet("Items/{id}/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromItem(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromItemAsync(
             [FromRoute, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -253,6 +301,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var item = _libraryManager.GetItemById(id);
             var user = userId is null || userId.Value.Equals(default)
                 ? null
@@ -280,7 +336,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Artists/InstantMix")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Obsolete("Use GetInstantMixFromArtists")]
-        public ActionResult<QueryResult<BaseItemDto>> GetInstantMixFromArtists2(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetInstantMixFromArtists2Async(
             [FromQuery, Required] Guid id,
             [FromQuery] Guid? userId,
             [FromQuery] int? limit,
@@ -290,7 +346,7 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
-            return GetInstantMixFromArtists(
+            return await GetInstantMixFromArtistsAsync(
                 id,
                 userId,
                 limit,
@@ -298,7 +354,7 @@ namespace Jellyfin.Api.Controllers
                 enableImages,
                 enableUserData,
                 imageTypeLimit,
-                enableImageTypes);
+                enableImageTypes).ConfigureAwait(false);
         }
 
         /// <summary>

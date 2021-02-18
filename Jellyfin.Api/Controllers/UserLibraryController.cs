@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
@@ -13,6 +14,7 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -33,6 +35,7 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IUserManager _userManager;
         private readonly IUserDataManager _userDataRepository;
+        private readonly IAuthorizationContext _authContext;
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IUserViewManager _userViewManager;
@@ -43,6 +46,7 @@ namespace Jellyfin.Api.Controllers
         /// </summary>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
         /// <param name="userDataRepository">Instance of the <see cref="IUserDataManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="userViewManager">Instance of the <see cref="IUserViewManager"/> interface.</param>
@@ -50,6 +54,7 @@ namespace Jellyfin.Api.Controllers
         public UserLibraryController(
             IUserManager userManager,
             IUserDataManager userDataRepository,
+            IAuthorizationContext authContext,
             ILibraryManager libraryManager,
             IDtoService dtoService,
             IUserViewManager userViewManager,
@@ -57,6 +62,7 @@ namespace Jellyfin.Api.Controllers
         {
             _userManager = userManager;
             _userDataRepository = userDataRepository;
+            _authContext = authContext;
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _userViewManager = userViewManager;
@@ -74,6 +80,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<BaseItemDto>> GetItem([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!(await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false)))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             var item = itemId.Equals(default)
@@ -95,8 +106,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the user's root folder.</returns>
         [HttpGet("Users/{userId}/Items/Root")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<BaseItemDto> GetRootFolder([FromRoute, Required] Guid userId)
+        public async Task<ActionResult<BaseItemDto>> GetRootFolderAsync([FromRoute, Required] Guid userId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             var item = _libraryManager.GetUserRootFolder();
             var dtoOptions = new DtoOptions().AddClientFields(Request);
@@ -114,6 +130,11 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<QueryResult<BaseItemDto>>> GetIntros([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             var item = itemId.Equals(default)
@@ -136,8 +157,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the <see cref="UserItemDataDto"/>.</returns>
         [HttpPost("Users/{userId}/FavoriteItems/{itemId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<UserItemDataDto> MarkFavoriteItem([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
+        public async Task<ActionResult<UserItemDataDto>> MarkFavoriteItemAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return MarkFavorite(userId, itemId, true);
         }
 
@@ -150,8 +176,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the <see cref="UserItemDataDto"/>.</returns>
         [HttpDelete("Users/{userId}/FavoriteItems/{itemId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<UserItemDataDto> UnmarkFavoriteItem([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
+        public async Task<ActionResult<UserItemDataDto>> UnmarkFavoriteItemAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return MarkFavorite(userId, itemId, false);
         }
 
@@ -164,8 +195,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the <see cref="UserItemDataDto"/>.</returns>
         [HttpDelete("Users/{userId}/Items/{itemId}/Rating")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<UserItemDataDto> DeleteUserItemRating([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
+        public async Task<ActionResult<UserItemDataDto>> DeleteUserItemRatingAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return UpdateUserItemRatingInternal(userId, itemId, null);
         }
 
@@ -174,13 +210,18 @@ namespace Jellyfin.Api.Controllers
         /// </summary>
         /// <param name="userId">User id.</param>
         /// <param name="itemId">Item id.</param>
-        /// <param name="likes">Whether this <see cref="UpdateUserItemRating" /> is likes.</param>
+        /// <param name="likes">Whether this <see cref="UpdateUserItemRatingAsync" /> is likes.</param>
         /// <response code="200">Item rating updated.</response>
         /// <returns>An <see cref="OkResult"/> containing the <see cref="UserItemDataDto"/>.</returns>
         [HttpPost("Users/{userId}/Items/{itemId}/Rating")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<UserItemDataDto> UpdateUserItemRating([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId, [FromQuery] bool? likes)
+        public async Task<ActionResult<UserItemDataDto>> UpdateUserItemRatingAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId, [FromQuery] bool? likes)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             return UpdateUserItemRatingInternal(userId, itemId, likes);
         }
 
@@ -193,8 +234,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>The items local trailers.</returns>
         [HttpGet("Users/{userId}/Items/{itemId}/LocalTrailers")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<BaseItemDto>> GetLocalTrailers([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
+        public async Task<ActionResult<IEnumerable<BaseItemDto>>> GetLocalTrailersAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             var item = itemId.Equals(default)
@@ -223,8 +269,13 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the special features.</returns>
         [HttpGet("Users/{userId}/Items/{itemId}/SpecialFeatures")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<BaseItemDto>> GetSpecialFeatures([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
+        public async Task<ActionResult<IEnumerable<BaseItemDto>>> GetSpecialFeaturesAsync([FromRoute, Required] Guid userId, [FromRoute, Required] Guid itemId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             var item = itemId.Equals(default)
@@ -256,7 +307,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the latest media.</returns>
         [HttpGet("Users/{userId}/Items/Latest")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<BaseItemDto>> GetLatestMedia(
+        public async Task<ActionResult<IEnumerable<BaseItemDto>>> GetLatestMediaAsync(
             [FromRoute, Required] Guid userId,
             [FromQuery] Guid? parentId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
@@ -269,6 +320,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int limit = 20,
             [FromQuery] bool groupItems = true)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
 
             if (!isPlayed.HasValue)

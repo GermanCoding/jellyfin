@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
@@ -118,7 +119,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the trailers.</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetTrailers(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetTrailersAsync(
             [FromQuery] Guid userId,
             [FromQuery] string? maxOfficialRating,
             [FromQuery] bool? hasThemeSong,
@@ -206,8 +207,8 @@ namespace Jellyfin.Api.Controllers
         {
             var includeItemTypes = new[] { BaseItemKind.Trailer };
 
-            return _itemsController
-                .GetItems(
+            return await _itemsController
+                .GetItemsAsync(
                     userId,
                     maxOfficialRating,
                     hasThemeSong,
@@ -292,7 +293,7 @@ namespace Jellyfin.Api.Controllers
                     studioIds,
                     genreIds,
                     enableTotalRecordCount,
-                    enableImages);
+                    enableImages).ConfigureAwait(false);
         }
     }
 }

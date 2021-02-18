@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -66,6 +66,12 @@ namespace Jellyfin.Api.Helpers
 
             var authenticatedUser = auth.User;
 
+            if (userId.Equals(Guid.Empty))
+            {
+                // Empty GUID should not match any user, grant access
+                return true;
+            }
+
             // If they're going to update the record of another user, they must be an administrator
             if ((!userId.Equals(auth.UserId) && !authenticatedUser.HasPermission(PermissionKind.IsAdministrator))
                 || (restrictUserPreferences && !authenticatedUser.EnableUserPreferenceAccess))
@@ -74,6 +80,40 @@ namespace Jellyfin.Api.Helpers
             }
 
             return true;
+        }
+
+        internal static bool CheckSessionAccess(ISessionManager sessionManager, string sessionId, AuthorizationInfo authInfo)
+        {
+            SessionInfo? session = GetSessionById(sessionManager, sessionId);
+            if (session == null)
+            {
+                return true;
+            }
+
+            if (authInfo.User != null && authInfo.User.HasPermission(PermissionKind.IsAdministrator))
+            {
+                return true;
+            }
+
+            return session.ContainsUser(authInfo.UserId);
+        }
+
+        internal static SessionInfo? GetSessionById(ISessionManager sessionManager, string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return null;
+            }
+
+            foreach (SessionInfo session in sessionManager.Sessions)
+            {
+                if (string.Equals(session.Id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return session;
+                }
+            }
+
+            return null;
         }
 
         internal static async Task<SessionInfo> GetSession(ISessionManager sessionManager, IAuthorizationContext authContext, HttpRequest request)

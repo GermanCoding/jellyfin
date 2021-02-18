@@ -3,11 +3,14 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Controller;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,16 +27,19 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IDisplayPreferencesManager _displayPreferencesManager;
         private readonly ILogger<DisplayPreferencesController> _logger;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DisplayPreferencesController"/> class.
         /// </summary>
         /// <param name="displayPreferencesManager">Instance of <see cref="IDisplayPreferencesManager"/> interface.</param>
         /// <param name="logger">Instance of <see cref="ILogger{DisplayPreferencesController}"/> interface.</param>
-        public DisplayPreferencesController(IDisplayPreferencesManager displayPreferencesManager, ILogger<DisplayPreferencesController> logger)
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
+        public DisplayPreferencesController(IDisplayPreferencesManager displayPreferencesManager, ILogger<DisplayPreferencesController> logger, IAuthorizationContext authContext)
         {
             _displayPreferencesManager = displayPreferencesManager;
             _logger = logger;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -47,11 +53,16 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("{displayPreferencesId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "displayPreferencesId", Justification = "Imported from ServiceStack")]
-        public ActionResult<DisplayPreferencesDto> GetDisplayPreferences(
+        public async Task<ActionResult<DisplayPreferencesDto>> GetDisplayPreferencesAsync(
             [FromRoute, Required] string displayPreferencesId,
             [FromQuery, Required] Guid userId,
             [FromQuery, Required] string client)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             if (!Guid.TryParse(displayPreferencesId, out var itemId))
             {
                 itemId = displayPreferencesId.GetMD5();
@@ -115,12 +126,17 @@ namespace Jellyfin.Api.Controllers
         [HttpPost("{displayPreferencesId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "displayPreferencesId", Justification = "Imported from ServiceStack")]
-        public ActionResult UpdateDisplayPreferences(
+        public async Task<ActionResult> UpdateDisplayPreferencesAsync(
             [FromRoute, Required] string displayPreferencesId,
             [FromQuery, Required] Guid userId,
             [FromQuery, Required] string client,
             [FromBody, Required] DisplayPreferencesDto displayPreferences)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             HomeSectionType[] defaults =
             {
                 HomeSectionType.SmallLibraryTiles,

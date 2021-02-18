@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
@@ -11,6 +13,7 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.TV;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -29,6 +32,7 @@ namespace Jellyfin.Api.Controllers
     public class TvShowsController : BaseJellyfinApiController
     {
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly ITVSeriesManager _tvSeriesManager;
@@ -37,16 +41,19 @@ namespace Jellyfin.Api.Controllers
         /// Initializes a new instance of the <see cref="TvShowsController"/> class.
         /// </summary>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="tvSeriesManager">Instance of the <see cref="ITVSeriesManager"/> interface.</param>
         public TvShowsController(
             IUserManager userManager,
+            IAuthorizationContext authContext,
             ILibraryManager libraryManager,
             IDtoService dtoService,
             ITVSeriesManager tvSeriesManager)
         {
             _userManager = userManager;
+            _authContext = authContext;
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _tvSeriesManager = tvSeriesManager;
@@ -72,7 +79,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the next up episodes.</returns>
         [HttpGet("NextUp")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetNextUp(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetNextUpAsync(
             [FromQuery] Guid? userId,
             [FromQuery] int? startIndex,
             [FromQuery] int? limit,
@@ -88,6 +95,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool disableFirstEpisode = false,
             [FromQuery] bool enableRewatching = false)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var options = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -134,7 +149,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the next up episodes.</returns>
         [HttpGet("Upcoming")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetUpcomingEpisodes(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetUpcomingEpisodesAsync(
             [FromQuery] Guid? userId,
             [FromQuery] int? startIndex,
             [FromQuery] int? limit,
@@ -148,6 +163,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             var minPremiereDate = DateTime.UtcNow.Date.AddDays(-1);
 
@@ -199,7 +222,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("{seriesId}/Episodes")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<QueryResult<BaseItemDto>> GetEpisodes(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetEpisodesAsync(
             [FromRoute, Required] Guid seriesId,
             [FromQuery] Guid? userId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
@@ -219,6 +242,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             List<BaseItem> episodes;
 
@@ -320,7 +351,7 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("{seriesId}/Seasons")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<QueryResult<BaseItemDto>> GetSeasons(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetSeasonsAsync(
             [FromRoute, Required] Guid seriesId,
             [FromQuery] Guid? userId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
@@ -335,6 +366,14 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
 
             if (_libraryManager.GetItemById(seriesId) is not Series series)
             {

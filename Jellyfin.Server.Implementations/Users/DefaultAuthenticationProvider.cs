@@ -74,7 +74,7 @@ namespace Jellyfin.Server.Implementations.Users
             // Migrate old hashes to the new default
             if (!string.Equals(readyHash.Id, _cryptographyProvider.DefaultHashMethod, StringComparison.Ordinal))
             {
-                ChangePassword(resolvedUser, password);
+                ChangePassword(resolvedUser, password, password);
             }
 
             return Task.FromResult(new ProviderAuthenticationResult
