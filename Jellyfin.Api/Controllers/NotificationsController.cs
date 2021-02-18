@@ -7,6 +7,7 @@ using Jellyfin.Api.Constants;
 using Jellyfin.Api.Models.NotificationDtos;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Notifications;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Notifications;
@@ -24,17 +25,22 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly INotificationManager _notificationManager;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NotificationsController" /> class.
         /// </summary>
         /// <param name="notificationManager">The notification manager.</param>
         /// <param name="userManager">The user manager.</param>
-        public NotificationsController(INotificationManager notificationManager, IUserManager userManager)
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
+        public NotificationsController(INotificationManager notificationManager, IUserManager userManager, IAuthorizationContext authContext)
         {
             _notificationManager = notificationManager;
             _userManager = userManager;
+            _authContext = authContext;
         }
+
+        // TODO: This seems to be mostly stub content at this point. Skip auth for now. If this gets implemented in the future, we need auth here too.
 
         /// <summary>
         /// Gets a user's notifications.

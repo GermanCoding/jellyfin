@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Jellyfin.Api.Attributes;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Api.Models.PlaylistDtos;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -32,6 +34,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IDtoService _dtoService;
         private readonly IUserManager _userManager;
         private readonly ILibraryManager _libraryManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlaylistsController"/> class.
@@ -40,16 +43,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="playlistManager">Instance of the <see cref="IPlaylistManager"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public PlaylistsController(
             IDtoService dtoService,
             IPlaylistManager playlistManager,
             IUserManager userManager,
-            ILibraryManager libraryManager)
+            ILibraryManager libraryManager,
+            IAuthorizationContext authContext)
         {
             _dtoService = dtoService;
             _playlistManager = playlistManager;
             _userManager = userManager;
             _libraryManager = libraryManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -77,6 +83,15 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, ParameterObsolete] string? mediaType,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CreatePlaylistDto? createPlaylistRequest)
         {
+            Guid? checkUserId = userId ?? createPlaylistRequest?.UserId;
+            if (checkUserId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, checkUserId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             if (ids.Count == 0)
             {
                 ids = createPlaylistRequest?.Ids ?? Array.Empty<Guid>();
@@ -108,6 +123,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] Guid[] ids,
             [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             await _playlistManager.AddToPlaylistAsync(playlistId, ids, userId ?? Guid.Empty).ConfigureAwait(false);
             return NoContent();
         }
@@ -127,6 +150,7 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string itemId,
             [FromRoute, Required] int newIndex)
         {
+            // TODO: Any auth user can do this
             await _playlistManager.MoveItemAsync(playlistId, itemId, newIndex).ConfigureAwait(false);
             return NoContent();
         }
@@ -144,6 +168,7 @@ namespace Jellyfin.Api.Controllers
             [FromRoute, Required] string playlistId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] string[] entryIds)
         {
+            // TODO: Any auth user can do this
             await _playlistManager.RemoveFromPlaylistAsync(playlistId, entryIds).ConfigureAwait(false);
             return NoContent();
         }
@@ -164,7 +189,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Playlist not found.</response>
         /// <returns>The original playlist items.</returns>
         [HttpGet("{playlistId}/Items")]
-        public ActionResult<QueryResult<BaseItemDto>> GetPlaylistItems(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetPlaylistItemsAsync(
             [FromRoute, Required] Guid playlistId,
             [FromQuery, Required] Guid userId,
             [FromQuery] int? startIndex,
@@ -175,6 +200,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? imageTypeLimit,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ImageType[] enableImageTypes)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var playlist = (Playlist)_libraryManager.GetItemById(playlistId);
             if (playlist == null)
             {

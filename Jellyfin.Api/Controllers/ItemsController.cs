@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
 using Jellyfin.Api.Helpers;
@@ -9,6 +10,7 @@ using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -34,6 +36,7 @@ namespace Jellyfin.Api.Controllers
         private readonly IDtoService _dtoService;
         private readonly ILogger<ItemsController> _logger;
         private readonly ISessionManager _sessionManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ItemsController"/> class.
@@ -44,13 +47,15 @@ namespace Jellyfin.Api.Controllers
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
         /// <param name="sessionManager">Instance of the <see cref="ISessionManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public ItemsController(
             IUserManager userManager,
             ILibraryManager libraryManager,
             ILocalizationManager localization,
             IDtoService dtoService,
             ILogger<ItemsController> logger,
-            ISessionManager sessionManager)
+            ISessionManager sessionManager,
+            IAuthorizationContext authContext)
         {
             _userManager = userManager;
             _libraryManager = libraryManager;
@@ -58,6 +63,7 @@ namespace Jellyfin.Api.Controllers
             _dtoService = dtoService;
             _logger = logger;
             _sessionManager = sessionManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -151,7 +157,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the items.</returns>
         [HttpGet("Items")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetItems(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItemsAsync(
             [FromQuery] Guid userId,
             [FromQuery] string? maxOfficialRating,
             [FromQuery] bool? hasThemeSong,
@@ -239,6 +245,15 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? enableImages = true)
         {
             var user = userId.Equals(default) ? null : _userManager.GetUserById(userId);
+
+            if (!userId.Equals(Guid.Empty))
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -589,7 +604,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the items.</returns>
         [HttpGet("Users/{userId}/Items")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetItemsByUserId(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItemsByUserIdAsync(
             [FromRoute] Guid userId,
             [FromQuery] string? maxOfficialRating,
             [FromQuery] bool? hasThemeSong,
@@ -676,7 +691,12 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool enableTotalRecordCount = true,
             [FromQuery] bool? enableImages = true)
         {
-            return GetItems(
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
+            return await GetItemsAsync(
                 userId,
                 maxOfficialRating,
                 hasThemeSong,
@@ -761,7 +781,7 @@ namespace Jellyfin.Api.Controllers
                 studioIds,
                 genreIds,
                 enableTotalRecordCount,
-                enableImages);
+                enableImages).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -786,7 +806,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the items that are resumable.</returns>
         [HttpGet("Users/{userId}/Items/Resume")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetResumeItems(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetResumeItemsAsync(
             [FromRoute, Required] Guid userId,
             [FromQuery] int? startIndex,
             [FromQuery] int? limit,
@@ -803,6 +823,11 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? enableImages = true,
             [FromQuery] bool excludeActiveSessions = false)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             var parentIdGuid = parentId ?? Guid.Empty;
             var dtoOptions = new DtoOptions { Fields = fields }

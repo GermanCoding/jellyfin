@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Api.Models.UserViewDtos;
 using MediaBrowser.Controller.Dto;
@@ -69,12 +70,17 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("Users/{userId}/Views")]
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public QueryResult<BaseItemDto> GetUserViews(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetUserViewsAsync(
             [FromRoute, Required] Guid userId,
             [FromQuery] bool? includeExternalContent,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] string[] presetViews,
             [FromQuery] bool includeHidden = false)
         {
+            if (!(await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false)))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var query = new UserViewQuery
             {
                 UserId = userId,
@@ -123,8 +129,13 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.DefaultAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<IEnumerable<SpecialViewOptionDto>> GetGroupingOptions([FromRoute, Required] Guid userId)
+        public async Task<ActionResult<IEnumerable<SpecialViewOptionDto>>> GetGroupingOptionsAsync([FromRoute, Required] Guid userId)
         {
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
+
             var user = _userManager.GetUserById(userId);
             if (user == null)
             {

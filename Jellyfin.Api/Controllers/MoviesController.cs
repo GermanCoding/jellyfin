@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
@@ -12,10 +14,13 @@ using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jellyfin.Api.Controllers
@@ -30,6 +35,7 @@ namespace Jellyfin.Api.Controllers
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IServerConfigurationManager _serverConfigurationManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MoviesController"/> class.
@@ -38,16 +44,19 @@ namespace Jellyfin.Api.Controllers
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="serverConfigurationManager">Instance of the <see cref="IServerConfigurationManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public MoviesController(
             IUserManager userManager,
             ILibraryManager libraryManager,
             IDtoService dtoService,
-            IServerConfigurationManager serverConfigurationManager)
+            IServerConfigurationManager serverConfigurationManager,
+            IAuthorizationContext authContext)
         {
             _userManager = userManager;
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _serverConfigurationManager = serverConfigurationManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -61,7 +70,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">Movie recommendations returned.</response>
         /// <returns>The list of movie recommendations.</returns>
         [HttpGet("Recommendations")]
-        public ActionResult<IEnumerable<RecommendationDto>> GetMovieRecommendations(
+        public async Task<ActionResult<IEnumerable<RecommendationDto>>> GetMovieRecommendationsAsync(
             [FromQuery] Guid? userId,
             [FromQuery] Guid? parentId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
@@ -71,6 +80,15 @@ namespace Jellyfin.Api.Controllers
             var user = userId is null || userId.Value.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId.Value);
+
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request);
 

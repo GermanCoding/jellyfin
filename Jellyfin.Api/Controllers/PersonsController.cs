@@ -1,13 +1,16 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Entities;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Querying;
@@ -26,6 +29,8 @@ namespace Jellyfin.Api.Controllers
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IUserManager _userManager;
+        private readonly IUserDataManager _userDataManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PersonsController"/> class.
@@ -36,11 +41,15 @@ namespace Jellyfin.Api.Controllers
         public PersonsController(
             ILibraryManager libraryManager,
             IDtoService dtoService,
-            IUserManager userManager)
+            IUserManager userManager,
+            IUserDataManager userDataManager,
+            IAuthorizationContext authContext)
         {
             _libraryManager = libraryManager;
             _dtoService = dtoService;
             _userManager = userManager;
+            _userDataManager = userDataManager;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -63,7 +72,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the queryresult of persons.</returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetPersons(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetPersonsAsync(
             [FromQuery] int? limit,
             [FromQuery] string? searchTerm,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] ItemFields[] fields,
@@ -78,6 +87,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] Guid? userId,
             [FromQuery] bool? enableImages = true)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
@@ -116,8 +133,16 @@ namespace Jellyfin.Api.Controllers
         [HttpGet("{name}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<BaseItemDto> GetPerson([FromRoute, Required] string name, [FromQuery] Guid? userId)
+        public async Task<ActionResult<BaseItemDto>> GetPersonAsync([FromRoute, Required] string name, [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions()
                 .AddClientFields(Request);
 

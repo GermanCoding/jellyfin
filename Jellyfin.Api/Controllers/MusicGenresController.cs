@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
 using Jellyfin.Api.Helpers;
@@ -11,6 +12,7 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Querying;
@@ -29,6 +31,7 @@ namespace Jellyfin.Api.Controllers
         private readonly ILibraryManager _libraryManager;
         private readonly IDtoService _dtoService;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MusicGenresController"/> class.
@@ -36,14 +39,17 @@ namespace Jellyfin.Api.Controllers
         /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
         /// <param name="userManager">Instance of <see cref="IUserManager"/> interface.</param>
         /// <param name="dtoService">Instance of <see cref="IDtoService"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public MusicGenresController(
             ILibraryManager libraryManager,
             IUserManager userManager,
-            IDtoService dtoService)
+            IDtoService dtoService,
+            IAuthorizationContext authContext)
         {
             _libraryManager = libraryManager;
             _userManager = userManager;
             _dtoService = dtoService;
+            _authContext = authContext;
         }
 
         /// <summary>
@@ -71,7 +77,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing the queryresult of music genres.</returns>
         [HttpGet]
         [Obsolete("Use GetGenres instead")]
-        public ActionResult<QueryResult<BaseItemDto>> GetMusicGenres(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetMusicGenresAsync(
             [FromQuery] int? startIndex,
             [FromQuery] int? limit,
             [FromQuery] string? searchTerm,
@@ -91,6 +97,14 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] bool? enableImages = true,
             [FromQuery] bool enableTotalRecordCount = true)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions { Fields = fields }
                 .AddClientFields(Request)
                 .AddAdditionalDtoOptions(enableImages, false, imageTypeLimit, enableImageTypes);
@@ -143,8 +157,16 @@ namespace Jellyfin.Api.Controllers
         /// <returns>An <see cref="OkResult"/> containing a <see cref="BaseItemDto"/> with the music genre.</returns>
         [HttpGet("{genreName}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<BaseItemDto> GetMusicGenre([FromRoute, Required] string genreName, [FromQuery] Guid? userId)
+        public async Task<ActionResult<BaseItemDto>> GetMusicGenreAsync([FromRoute, Required] string genreName, [FromQuery] Guid? userId)
         {
+            if (userId.HasValue)
+            {
+                if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId.Value, false).ConfigureAwait(false))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+                }
+            }
+
             var dtoOptions = new DtoOptions().AddClientFields(Request);
 
             MusicGenre? item;

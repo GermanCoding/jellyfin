@@ -1,12 +1,15 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Authorization;
@@ -24,6 +27,7 @@ namespace Jellyfin.Api.Controllers
     {
         private readonly IDtoService _dtoService;
         private readonly IUserManager _userManager;
+        private readonly IAuthorizationContext _authContext;
         private readonly ILibraryManager _libraryManager;
 
         /// <summary>
@@ -31,14 +35,17 @@ namespace Jellyfin.Api.Controllers
         /// </summary>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         public SuggestionsController(
             IDtoService dtoService,
             IUserManager userManager,
+            IAuthorizationContext authContext,
             ILibraryManager libraryManager)
         {
             _dtoService = dtoService;
             _userManager = userManager;
+            _authContext = authContext;
             _libraryManager = libraryManager;
         }
 
@@ -55,7 +62,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="QueryResult{BaseItemDto}"/> with the suggestions.</returns>
         [HttpGet("Users/{userId}/Suggestions")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<QueryResult<BaseItemDto>> GetSuggestions(
+        public async Task<ActionResult<QueryResult<BaseItemDto>>> GetSuggestionsAsync(
             [FromRoute, Required] Guid userId,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] string[] mediaType,
             [FromQuery, ModelBinder(typeof(CommaDelimitedArrayModelBinder))] BaseItemKind[] type,
@@ -66,6 +73,11 @@ namespace Jellyfin.Api.Controllers
             var user = userId.Equals(default)
                 ? null
                 : _userManager.GetUserById(userId);
+
+            if (!await RequestHelpers.AssertCanUpdateUser(_authContext, HttpContext.Request, userId, false).ConfigureAwait(false))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "User does not have permission for this action.");
+            }
 
             var dtoOptions = new DtoOptions().AddClientFields(Request);
             var result = _libraryManager.GetItemsResult(new InternalItemsQuery(user)
