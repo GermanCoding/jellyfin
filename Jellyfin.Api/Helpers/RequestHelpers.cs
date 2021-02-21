@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
@@ -8,7 +9,6 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Dto;
-using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Http;
 
@@ -25,35 +25,27 @@ namespace Jellyfin.Api.Helpers
         /// <param name="sortBy">Sort By. Comma delimited string.</param>
         /// <param name="requestedSortOrder">Sort Order. Comma delimited string.</param>
         /// <returns>Order By.</returns>
-        public static ValueTuple<string, SortOrder>[] GetOrderBy(string? sortBy, string? requestedSortOrder)
+        public static (string, SortOrder)[] GetOrderBy(IReadOnlyList<string> sortBy, IReadOnlyList<SortOrder> requestedSortOrder)
         {
-            var val = sortBy;
-
-            if (string.IsNullOrEmpty(val))
+            if (sortBy.Count == 0)
             {
                 return Array.Empty<ValueTuple<string, SortOrder>>();
             }
 
-            var vals = val.Split(',');
-            if (string.IsNullOrWhiteSpace(requestedSortOrder))
+            var result = new (string, SortOrder)[sortBy.Count];
+            var i = 0;
+            // Add elements which have a SortOrder specified
+            for (; i < requestedSortOrder.Count; i++)
             {
-                requestedSortOrder = "Ascending";
+                result[i] = (sortBy[i], requestedSortOrder[i]);
             }
 
-            var sortOrders = requestedSortOrder.Split(',');
-
-            var result = new ValueTuple<string, SortOrder>[vals.Length];
-
-            for (var i = 0; i < vals.Length; i++)
+            // Add remaining elements with the first specified SortOrder
+            // or the default one if no SortOrders are specified
+            var order = requestedSortOrder.Count > 0 ? requestedSortOrder[0] : SortOrder.Ascending;
+            for (; i < sortBy.Count; i++)
             {
-                var sortOrderIndex = sortOrders.Length > i ? i : 0;
-
-                var sortOrderValue = sortOrders.Length > sortOrderIndex ? sortOrders[sortOrderIndex] : null;
-                var sortOrder = string.Equals(sortOrderValue, "Descending", StringComparison.OrdinalIgnoreCase)
-                    ? SortOrder.Descending
-                    : SortOrder.Ascending;
-
-                result[i] = new ValueTuple<string, SortOrder>(vals[i], sortOrder);
+                result[i] = (sortBy[i], order);
             }
 
             return result;

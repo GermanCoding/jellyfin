@@ -308,11 +308,15 @@ namespace Jellyfin.Server.Extensions
                                ?? null;
                     });
 
+                // Allow parameters to properly be nullable.
+                c.UseAllOfToExtendReferenceSchemas();
+
                 // TODO - remove when all types are supported in System.Text.Json
                 c.AddSwaggerTypeMappings();
 
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
                 c.OperationFilter<FileResponseFilter>();
+                c.OperationFilter<FileRequestFilter>();
                 c.OperationFilter<ParameterObsoleteFilter>();
                 c.DocumentFilter<WebsocketModelFilter>();
             });
