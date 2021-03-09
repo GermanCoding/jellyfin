@@ -826,7 +826,7 @@ namespace Jellyfin.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<LibraryOptionsResultDto> GetLibraryOptionsInfo(
             [FromQuery] string? libraryContentType,
-            [FromQuery] bool isNewLibrary)
+            [FromQuery] bool isNewLibrary = false)
         {
             var result = new LibraryOptionsResultDto();
 

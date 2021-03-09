@@ -217,9 +217,7 @@ namespace Jellyfin.Api.Controllers
                 return BadRequest("Please supply at least two videos to merge.");
             }
 
-            var videosWithVersions = items.Where(i => i.MediaSourceCount > 1).ToList();
-
-            var primaryVersion = videosWithVersions.FirstOrDefault();
+            var primaryVersion = items.FirstOrDefault(i => i.MediaSourceCount > 1 && string.IsNullOrEmpty(i.PrimaryVersionId));
             if (primaryVersion == null)
             {
                 primaryVersion = items
@@ -365,7 +363,7 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? height,
             [FromQuery] int? videoBitRate,
             [FromQuery] int? subtitleStreamIndex,
-            [FromQuery] SubtitleDeliveryMethod subtitleMethod,
+            [FromQuery] SubtitleDeliveryMethod? subtitleMethod,
             [FromQuery] int? maxRefFrames,
             [FromQuery] int? maxVideoBitDepth,
             [FromQuery] bool? requireAvc,
@@ -380,7 +378,7 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? transcodeReasons,
             [FromQuery] int? audioStreamIndex,
             [FromQuery] int? videoStreamIndex,
-            [FromQuery] EncodingContext context,
+            [FromQuery] EncodingContext? context,
             [FromQuery] Dictionary<string, string> streamOptions)
         {
             var isHeadRequest = Request.Method == System.Net.WebRequestMethods.Http.Head;
@@ -419,7 +417,7 @@ namespace Jellyfin.Api.Controllers
                 Height = height,
                 VideoBitRate = videoBitRate,
                 SubtitleStreamIndex = subtitleStreamIndex,
-                SubtitleMethod = subtitleMethod,
+                SubtitleMethod = subtitleMethod ?? SubtitleDeliveryMethod.Encode,
                 MaxRefFrames = maxRefFrames,
                 MaxVideoBitDepth = maxVideoBitDepth,
                 RequireAvc = requireAvc ?? true,
@@ -434,7 +432,7 @@ namespace Jellyfin.Api.Controllers
                 TranscodeReasons = transcodeReasons,
                 AudioStreamIndex = audioStreamIndex,
                 VideoStreamIndex = videoStreamIndex,
-                Context = context,
+                Context = context ?? EncodingContext.Streaming,
                 StreamOptions = streamOptions
             };
 
@@ -622,7 +620,7 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] int? height,
             [FromQuery] int? videoBitRate,
             [FromQuery] int? subtitleStreamIndex,
-            [FromQuery] SubtitleDeliveryMethod subtitleMethod,
+            [FromQuery] SubtitleDeliveryMethod? subtitleMethod,
             [FromQuery] int? maxRefFrames,
             [FromQuery] int? maxVideoBitDepth,
             [FromQuery] bool? requireAvc,
@@ -637,7 +635,7 @@ namespace Jellyfin.Api.Controllers
             [FromQuery] string? transcodeReasons,
             [FromQuery] int? audioStreamIndex,
             [FromQuery] int? videoStreamIndex,
-            [FromQuery] EncodingContext context,
+            [FromQuery] EncodingContext? context,
             [FromQuery] Dictionary<string, string> streamOptions)
         {
             return GetVideoStream(
