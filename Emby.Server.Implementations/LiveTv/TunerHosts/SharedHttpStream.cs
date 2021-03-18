@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
@@ -56,8 +58,20 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts
             Logger.LogInformation("Opening " + typeName + " Live stream from {0}", url);
 
             // Response stream is disposed manually.
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrEmpty(TunerHost.UserAgent))
+            {
+                requestMessage.Headers.UserAgent.TryParseAdd(TunerHost.UserAgent);
+            }
+
+            if (!string.IsNullOrEmpty(TunerHost.UserName))
+            {
+                var bytes = Encoding.UTF8.GetBytes(TunerHost.UserName + ":" + TunerHost.Password);
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
+            }
+
             var response = await _httpClientFactory.CreateClient(NamedClient.Default)
-                .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, CancellationToken.None)
+                .SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, CancellationToken.None)
                 .ConfigureAwait(false);
 
             var extension = "ts";

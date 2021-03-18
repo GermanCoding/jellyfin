@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.LiveTv;
 
 namespace Emby.Server.Implementations.Library
 {
@@ -33,6 +34,8 @@ namespace Emby.Server.Implementations.Library
         public MediaSourceInfo MediaSource { get; set; }
 
         public string UniqueId { get; }
+
+        public TunerHostInfo TunerHost { get; set; }
 
         public Task Close()
         {

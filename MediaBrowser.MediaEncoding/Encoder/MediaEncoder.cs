@@ -346,6 +346,13 @@ namespace MediaBrowser.MediaEncoding.Encoder
                                   (request.MediaSource.AnalyzeDurationMs * 1000).ToString();
             }
 
+            var authParam = EncodingHelper.GetAuthentication(request.MediaSource);
+
+            if (!string.IsNullOrEmpty(authParam))
+            {
+                analyzeDuration += " " + authParam;
+            }
+
             var forceEnableLogging = request.MediaSource.Protocol != MediaProtocol.File;
 
             return GetMediaInfoInternal(

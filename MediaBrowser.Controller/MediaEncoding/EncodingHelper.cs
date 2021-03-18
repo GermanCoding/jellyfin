@@ -19,6 +19,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.MediaInfo;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Net.Http.Headers;
 
 namespace MediaBrowser.Controller.MediaEncoding
 {
@@ -216,6 +217,27 @@ namespace MediaBrowser.Controller.MediaEncoding
             if (state.RemoteHttpHeaders.TryGetValue("User-Agent", out string useragent))
             {
                 return "-user_agent \"" + useragent + "\"";
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets the authentication param
+        /// </summary>
+        /// <param name="info">The media source info.</param>
+        /// <returns>System.String.</returns>
+        public static string GetAuthentication(MediaSourceInfo info)
+        {
+            if (info != null)
+            {
+                if (info.RequiredHttpHeaders != null)
+                {
+                    if (info.RequiredHttpHeaders.TryGetValue(HeaderNames.Authorization, out string auth))
+                    {
+                        return "-headers \"" + HeaderNames.Authorization + ": " + auth + "\"";
+                    }
+                }
             }
 
             return string.Empty;
@@ -2995,6 +3017,13 @@ namespace MediaBrowser.Controller.MediaEncoding
             if (!string.IsNullOrEmpty(userAgentParam))
             {
                 inputModifier += " " + userAgentParam;
+            }
+
+            var authParam = GetAuthentication(state.MediaSource);
+
+            if (!string.IsNullOrEmpty(authParam))
+            {
+                inputModifier += " " + authParam;
             }
 
             inputModifier = inputModifier.Trim();
