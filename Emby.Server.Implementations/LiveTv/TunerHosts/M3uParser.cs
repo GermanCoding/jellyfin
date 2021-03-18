@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,6 +60,12 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts
             if (!string.IsNullOrEmpty(info.UserAgent))
             {
                 requestMessage.Headers.UserAgent.TryParseAdd(info.UserAgent);
+            }
+
+            if (!string.IsNullOrEmpty(info.UserName))
+            {
+                var bytes = Encoding.UTF8.GetBytes(info.UserName + ":" + info.Password);
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
             }
 
             // Set HttpCompletionOption.ResponseHeadersRead to prevent timeouts on larger files

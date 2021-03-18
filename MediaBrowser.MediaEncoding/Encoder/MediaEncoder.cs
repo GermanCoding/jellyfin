@@ -392,6 +392,13 @@ namespace MediaBrowser.MediaEncoding.Encoder
                 analyzeDuration = "-analyzeduration " + ffmpegAnalyzeDuration;
             }
 
+            var authParam = EncodingHelper.GetAuthentication(request.MediaSource);
+
+            if (!string.IsNullOrEmpty(authParam))
+            {
+                analyzeDuration += " " + authParam;
+            }
+
             var forceEnableLogging = request.MediaSource.Protocol != MediaProtocol.File;
 
             return GetMediaInfoInternal(
