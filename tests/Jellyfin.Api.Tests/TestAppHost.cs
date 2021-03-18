@@ -49,7 +49,7 @@ namespace Jellyfin.Api.Tests
                 yield return a;
             }
 
-            yield return typeof(TestPlugin).Assembly;
+            yield return typeof(TestAppHost).Assembly;
         }
     }
 }
