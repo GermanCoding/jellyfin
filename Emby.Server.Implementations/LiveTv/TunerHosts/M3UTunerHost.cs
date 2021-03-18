@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Extensions;
@@ -164,6 +165,13 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts
                 httpHeaders[HeaderNames.UserAgent] = string.IsNullOrWhiteSpace(info.UserAgent) ?
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.85 Safari/537.36" :
                     info.UserAgent;
+
+                // Add authentication
+                if (!string.IsNullOrEmpty(info.UserName))
+                {
+                    var bytes = Encoding.UTF8.GetBytes(info.UserName + ":" + info.Password);
+                    httpHeaders[HeaderNames.Authorization] = "Basic " + Convert.ToBase64String(bytes);
+                }
             }
 
             var mediaSource = new MediaSourceInfo

@@ -31,6 +31,7 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts
             OriginalMediaSource = mediaSource;
             FileSystem = fileSystem;
             MediaSource = mediaSource;
+            TunerHost = tuner;
             Logger = logger;
             EnableStreamSharing = true;
             UniqueId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
@@ -72,6 +73,8 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts
         public string TunerHostId { get; }
 
         public DateTime DateOpened { get; protected set; }
+
+        public TunerHostInfo TunerHost { get; set; }
 
         protected void SetTempFilePath(string extension)
         {

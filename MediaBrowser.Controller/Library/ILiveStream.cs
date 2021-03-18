@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.LiveTv;
 
 namespace MediaBrowser.Controller.Library
 {
@@ -20,6 +21,8 @@ namespace MediaBrowser.Controller.Library
         bool EnableStreamSharing { get; }
 
         MediaSourceInfo MediaSource { get; set; }
+
+        TunerHostInfo TunerHost { get; set; }
 
         string UniqueId { get; }
 

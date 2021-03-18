@@ -158,6 +158,13 @@ namespace Emby.Server.Implementations.LiveTv.EmbyTV
 
             var inputModifier = "-async 1 -vsync -1";
 
+            var authParam = EncodingHelper.GetAuthentication(mediaSource);
+
+            if (!string.IsNullOrEmpty(authParam))
+            {
+                inputModifier += " " + authParam;
+            }
+
             if (flags.Count > 0)
             {
                 inputModifier += " -fflags " + string.Join(string.Empty, flags);
