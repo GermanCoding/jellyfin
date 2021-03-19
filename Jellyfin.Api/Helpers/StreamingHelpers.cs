@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Api.Models.StreamingDtos;
@@ -29,6 +31,17 @@ namespace Jellyfin.Api.Helpers
     /// </summary>
     public static class StreamingHelpers
     {
+        private static string _salt;
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1810:Statische Felder für Referenztyp inline initialisieren", Justification = "<Ausstehend>")]
+        static StreamingHelpers()
+        {
+            RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create();
+            byte[] localSalt = new byte[16];
+            randomNumberGenerator.GetBytes(localSalt);
+            _salt = BitConverter.ToString(localSalt);
+        }
+
         /// <summary>
         /// Gets the current streaming state.
         /// </summary>
@@ -502,13 +515,16 @@ namespace Jellyfin.Api.Helpers
         /// <returns>The complete file path, including the folder, for the transcoding file.</returns>
         private static string GetOutputFilePath(StreamState state, string outputFileExtension, IServerConfigurationManager serverConfigurationManager, string? deviceId, string? playSessionId)
         {
-            var data = $"{state.MediaPath}-{state.UserAgent}-{deviceId!}-{playSessionId!}";
+            var data = _salt + $"{state.MediaPath}-{state.UserAgent}-{deviceId!}-{playSessionId!}";
 
-            var filename = data.GetMD5().ToString("N", CultureInfo.InvariantCulture);
-            var ext = outputFileExtension?.ToLowerInvariant();
-            var folder = serverConfigurationManager.GetTranscodePath();
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                var filename = BitConverter.ToString(sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(data)));
+                var ext = outputFileExtension?.ToLowerInvariant();
+                var folder = serverConfigurationManager.GetTranscodePath();
 
-            return Path.Combine(folder, filename + ext);
+                return Path.Combine(folder, filename + ext);
+            }
         }
 
         private static void ApplyDeviceProfileSettings(StreamState state, IDlnaManager dlnaManager, IDeviceManager deviceManager, HttpRequest request, string? deviceProfileId, bool? @static)
