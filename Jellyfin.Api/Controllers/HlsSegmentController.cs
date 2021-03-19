@@ -128,8 +128,8 @@ namespace Jellyfin.Api.Controllers
         /// <response code="404">Hls segment not found.</response>
         /// <returns>A <see cref="FileStreamResult"/> containing the video segment.</returns>
         // Can't require authentication just yet due to seeing some requests come from Chrome without full query string
-        // TODO: Or maybe we can?
-        [Authorize(Policy = Policies.DefaultAuthorization)]
+        // TODO: Auth here breaks ExoPlayer (Android)
+        // [Authorize(Policy = Policies.DefaultAuthorization)]
         [HttpGet("Videos/{itemId}/hls/{playlistId}/{segmentId}.{segmentContainer}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
