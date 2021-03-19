@@ -88,6 +88,12 @@ namespace Emby.Server.Implementations.QuickConnect
         /// <inheritdoc/>
         public void SetState(QuickConnectState newState)
         {
+            // Hack: Do not use available state, always be active
+            if (newState == QuickConnectState.Available)
+            {
+                newState = QuickConnectState.Active;
+            }
+
             _logger.LogDebug("Changed quick connect state from {State} to {newState}", State, newState);
 
             ExpireRequests(true);
@@ -250,12 +256,14 @@ namespace Emby.Server.Implementations.QuickConnect
         public void ExpireRequests(bool expireAll = false)
         {
             // Check if quick connect should be deactivated
+            /*
             if (State == QuickConnectState.Active && DateTime.UtcNow > DateActivated.AddMinutes(Timeout) && !expireAll)
             {
                 _logger.LogDebug("Quick connect time expired, deactivating");
                 SetState(QuickConnectState.Available);
                 expireAll = true;
             }
+            */
 
             // Expire stale connection requests
             var code = string.Empty;
@@ -279,7 +287,7 @@ namespace Emby.Server.Implementations.QuickConnect
 
         private void ReloadConfiguration()
         {
-            State = _config.Configuration.QuickConnectAvailable ? QuickConnectState.Available : QuickConnectState.Unavailable;
+            State = _config.Configuration.QuickConnectAvailable ? QuickConnectState.Active : QuickConnectState.Unavailable;
         }
     }
 }
