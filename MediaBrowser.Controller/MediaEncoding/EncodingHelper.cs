@@ -298,7 +298,8 @@ namespace MediaBrowser.Controller.MediaEncoding
                 {
                     if (info.RequiredHttpHeaders.TryGetValue(HeaderNames.Authorization, out string auth))
                     {
-                        return "-headers \"" + HeaderNames.Authorization + ": " + auth + "\"";
+                        // Also ensure we're verifying certificates on HTTPS connections
+                        return "-tls_verify 1 -headers \"" + HeaderNames.Authorization + ": " + auth + "\"";
                     }
                 }
             }
