@@ -278,6 +278,7 @@ web/
 web-src.*
 MediaBrowser.WebDashboard/jellyfin-web
 apiclient/generated
+jellyfin-web
 
 # Omnisharp crash logs
 mono_crash.*.json
