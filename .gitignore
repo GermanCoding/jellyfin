@@ -274,6 +274,7 @@ BenchmarkDotNet.Artifacts
 web/
 web-src.*
 apiclient/generated
+jellyfin-web
 
 # Omnisharp crash logs
 mono_crash.*.json
