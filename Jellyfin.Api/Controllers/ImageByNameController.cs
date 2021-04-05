@@ -82,7 +82,7 @@ namespace Jellyfin.Api.Controllers
                 return NotFound();
             }
 
-            if (!path.StartsWith(_applicationPaths.GeneralPath))
+            if (!path.StartsWith(_applicationPaths.GeneralPath, StringComparison.Ordinal))
             {
                 return BadRequest("Invalid image path.");
             }
@@ -175,7 +175,7 @@ namespace Jellyfin.Api.Controllers
 
                 if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
                 {
-                    if (!path.StartsWith(basePath))
+                    if (!path.StartsWith(basePath, StringComparison.Ordinal))
                     {
                         return BadRequest("Invalid image path.");
                     }
@@ -194,7 +194,7 @@ namespace Jellyfin.Api.Controllers
 
                 if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
                 {
-                    if (!path.StartsWith(basePath))
+                    if (!path.StartsWith(basePath, StringComparison.Ordinal))
                     {
                         return BadRequest("Invalid image path.");
                     }

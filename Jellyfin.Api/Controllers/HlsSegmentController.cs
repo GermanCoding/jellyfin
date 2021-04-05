@@ -67,7 +67,7 @@ namespace Jellyfin.Api.Controllers
             var transcodePath = _serverConfigurationManager.GetTranscodePath();
             file = Path.GetFullPath(Path.Combine(transcodePath, file));
             var fileDir = Path.GetDirectoryName(file);
-            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodePath))
+            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodePath, StringComparison.Ordinal))
             {
                 return BadRequest("Invalid segment.");
             }
@@ -93,7 +93,7 @@ namespace Jellyfin.Api.Controllers
             var transcodePath = _serverConfigurationManager.GetTranscodePath();
             file = Path.GetFullPath(Path.Combine(transcodePath, file));
             var fileDir = Path.GetDirectoryName(file);
-            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodePath) || Path.GetExtension(file) != ".m3u8")
+            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodePath, StringComparison.Ordinal) || Path.GetExtension(file) != ".m3u8")
             {
                 return BadRequest("Invalid segment.");
             }
@@ -148,7 +148,7 @@ namespace Jellyfin.Api.Controllers
 
             file = Path.GetFullPath(Path.Combine(transcodeFolderPath, file));
             var fileDir = Path.GetDirectoryName(file);
-            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodeFolderPath))
+            if (string.IsNullOrEmpty(fileDir) || !fileDir.StartsWith(transcodeFolderPath, StringComparison.Ordinal))
             {
                 return BadRequest("Invalid segment.");
             }
