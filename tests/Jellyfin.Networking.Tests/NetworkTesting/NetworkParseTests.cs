@@ -38,6 +38,8 @@ namespace Jellyfin.Networking.Tests
         [InlineData("192.168.1.208/24,-16,vEthernet1|192.168.2.208/24,-16,vEthernet212|200.200.200.200/24,11,eth11", "192.168.1.0/24", "[]")]
         // vEthernet1 and vEthernet212 should be excluded.
         [InlineData("192.168.1.200/24,-20,vEthernet1|192.168.2.208/24,-16,vEthernet212|200.200.200.200/24,11,eth11", "192.168.1.0/24;200.200.200.200/24", "[200.200.200.200/24]")]
+        // Overlapping interface,
+        [InlineData("192.168.1.110/24,-20,br0|192.168.1.10/24,-16,br0|200.200.200.200/24,11,eth11", "192.168.1.0/24", "[192.168.1.110/24,192.168.1.10/24]")]
         public void IgnoreVirtualInterfaces(string interfaces, string lan, string value)
         {
             var conf = new NetworkConfiguration()
@@ -83,7 +85,7 @@ namespace Jellyfin.Networking.Tests
         /// <summary>
         /// Checks IP address formats.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="address">IP Address.</param>
         [Theory]
         [InlineData("127.0.0.1")]
         [InlineData("127.0.0.1:123")]
@@ -107,7 +109,7 @@ namespace Jellyfin.Networking.Tests
         /// <summary>
         /// Checks IP address formats.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="address">IP Address.</param>
         [Theory]
         [InlineData("127.0.0.1")]
         [InlineData("fd23:184f:2029:0:3139:7386:67d7:d517")]
@@ -199,29 +201,29 @@ namespace Jellyfin.Networking.Tests
             using var nm = new NetworkManager(GetMockConfig(conf), new NullLogger<NetworkManager>());
 
             // Test included.
-            Collection<IPObject> nc = nm.CreateIPCollection(settings.Split(","), false); 
+            Collection<IPObject> nc = nm.CreateIPCollection(settings.Split(','), false);
             Assert.Equal(nc.AsString(), result1);
 
             // Test excluded.
-            nc = nm.CreateIPCollection(settings.Split(","), true);
+            nc = nm.CreateIPCollection(settings.Split(','), true);
             Assert.Equal(nc.AsString(), result3);
 
             conf.EnableIPV6 = false;
             nm.UpdateSettings(conf);
             
             // Test IP4 included.
-            nc = nm.CreateIPCollection(settings.Split(","), false);
+            nc = nm.CreateIPCollection(settings.Split(','), false);
             Assert.Equal(nc.AsString(), result2);
 
             // Test IP4 excluded.
-            nc = nm.CreateIPCollection(settings.Split(","), true);
+            nc = nm.CreateIPCollection(settings.Split(','), true);
             Assert.Equal(nc.AsString(), result4);
 
             conf.EnableIPV6 = true;
             nm.UpdateSettings(conf);
 
             // Test network addresses of collection.
-            nc = nm.CreateIPCollection(settings.Split(","), false);
+            nc = nm.CreateIPCollection(settings.Split(','), false);
             nc = nc.AsNetworks();
             Assert.Equal(nc.AsString(), result5);
         }
@@ -261,8 +263,8 @@ namespace Jellyfin.Networking.Tests
 
             using var nm = new NetworkManager(GetMockConfig(conf), new NullLogger<NetworkManager>());
 
-            Collection<IPObject> nc1 = nm.CreateIPCollection(settings.Split(","), false);
-            Collection<IPObject> nc2 = nm.CreateIPCollection(compare.Split(","), false);
+            Collection<IPObject> nc1 = nm.CreateIPCollection(settings.Split(','), false);
+            Collection<IPObject> nc2 = nm.CreateIPCollection(compare.Split(','), false);
 
             Assert.Equal(nc1.Union(nc2).AsString(), result);
         }
@@ -371,10 +373,10 @@ namespace Jellyfin.Networking.Tests
             using var nm = new NetworkManager(GetMockConfig(conf), new NullLogger<NetworkManager>());
 
             // Test included, IP6.
-            Collection<IPObject> ncSource = nm.CreateIPCollection(source.Split(","));
-            Collection<IPObject> ncDest = nm.CreateIPCollection(dest.Split(","));
+            Collection<IPObject> ncSource = nm.CreateIPCollection(source.Split(','));
+            Collection<IPObject> ncDest = nm.CreateIPCollection(dest.Split(','));
             Collection<IPObject> ncResult = ncSource.Union(ncDest);
-            Collection<IPObject> resultCollection = nm.CreateIPCollection(result.Split(","));
+            Collection<IPObject> resultCollection = nm.CreateIPCollection(result.Split(','));
             Assert.True(ncResult.Compare(resultCollection));
         }
 
@@ -514,6 +516,46 @@ namespace Jellyfin.Networking.Tests
             var intf = nm.GetBindInterface(source, out int? _);
 
             Assert.Equal(intf, result);
+        }
+
+        [Theory]
+        [InlineData("185.10.10.10,200.200.200.200", "79.2.3.4", true)]
+        [InlineData("185.10.10.10", "185.10.10.10", false)]
+        [InlineData("", "100.100.100.100", false)]
+
+        public void HasRemoteAccess_GivenWhitelist_AllowsOnlyIpsInWhitelist(string addresses, string remoteIp, bool denied)
+        {
+            // Comma separated list of IP addresses or IP/netmask entries for networks that will be allowed to connect remotely.
+            // If left blank, all remote addresses will be allowed.
+            var conf = new NetworkConfiguration()
+            {
+                EnableIPV4 = true,
+                RemoteIPFilter = addresses.Split(','),
+                IsRemoteIPFilterBlacklist = false
+            };
+            using var nm = new NetworkManager(GetMockConfig(conf), new NullLogger<NetworkManager>());
+
+            Assert.NotEqual(nm.HasRemoteAccess(IPAddress.Parse(remoteIp)), denied);
+        }
+
+        [Theory]
+        [InlineData("185.10.10.10", "79.2.3.4", false)]
+        [InlineData("185.10.10.10", "185.10.10.10", true)]
+        [InlineData("", "100.100.100.100", false)]
+        public void HasRemoteAccess_GivenBlacklist_BlacklistTheIps(string addresses, string remoteIp, bool denied)
+        {
+            // Comma separated list of IP addresses or IP/netmask entries for networks that will be allowed to connect remotely.
+            // If left blank, all remote addresses will be allowed.
+            var conf = new NetworkConfiguration()
+            {
+                EnableIPV4 = true,
+                RemoteIPFilter = addresses.Split(','),
+                IsRemoteIPFilterBlacklist = true
+            };
+
+            using var nm = new NetworkManager(GetMockConfig(conf), new NullLogger<NetworkManager>());
+
+            Assert.NotEqual(nm.HasRemoteAccess(IPAddress.Parse(remoteIp)), denied);
         }
     }
 }
