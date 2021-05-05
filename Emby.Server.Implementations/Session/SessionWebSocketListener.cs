@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Api.Extensions;
@@ -116,6 +117,7 @@ namespace Emby.Server.Implementations.Session
             else
             {
                 _logger.LogWarning("Unable to determine session based on query string: {0}", httpContext.Request.QueryString);
+                throw new AuthenticationException("Invalid WebSocket session");
             }
         }
 
