@@ -17,11 +17,6 @@ namespace Emby.Server.Implementations.SyncPlay
     public class SyncPlayManager : ISyncPlayManager, IDisposable
     {
         /// <summary>
-        /// Timeout that defines after how many minutes users will not be automatically rejoined into a SyncPlay group.
-        /// </summary>
-        private readonly int _syncPlayTimeoutMinutes = 360; // 6 hours
-
-        /// <summary>
         /// The logger.
         /// </summary>
         private readonly ILogger<SyncPlayManager> _logger;
@@ -92,7 +87,7 @@ namespace Emby.Server.Implementations.SyncPlay
             _sessionManager = sessionManager;
             _libraryManager = libraryManager;
             _logger = loggerFactory.CreateLogger<SyncPlayManager>();
-            _sessionManager.SessionControllerConnected += OnSessionControllerConnected;
+            _sessionManager.SessionEnded += OnSessionEnded;
         }
 
         /// <inheritdoc />
@@ -357,28 +352,18 @@ namespace Emby.Server.Implementations.SyncPlay
                 return;
             }
 
-            _sessionManager.SessionControllerConnected -= OnSessionControllerConnected;
+            _sessionManager.SessionEnded -= OnSessionEnded;
             _disposed = true;
         }
 
-        private void OnSessionControllerConnected(object sender, SessionEventArgs e)
+        private void OnSessionEnded(object sender, SessionEventArgs e)
         {
             var session = e.SessionInfo;
 
             if (_sessionToGroupMap.TryGetValue(session.Id, out var group))
             {
-                if (DateTime.UtcNow >= group.LastActivity.AddMinutes(_syncPlayTimeoutMinutes))
-                {
-                    // Group is old. Remove the user from group instead of rejoining
-                    var request = new LeaveGroupRequest();
-                    LeaveGroup(session, request, CancellationToken.None);
-                }
-                else
-                {
-                    // Rejoin the user
-                    var request = new JoinGroupRequest(group.GroupId);
-                    JoinGroup(session, request, CancellationToken.None);
-                }
+                var leaveGroupRequest = new LeaveGroupRequest();
+                LeaveGroup(session, leaveGroupRequest, CancellationToken.None);
             }
         }
 
