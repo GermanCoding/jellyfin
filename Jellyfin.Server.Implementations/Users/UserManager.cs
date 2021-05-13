@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1307
+#pragma warning disable CA1307
 #pragma warning disable CA1309 // Use ordinal string comparison - EF can't translate this
 
 using System;
@@ -183,8 +183,7 @@ namespace Jellyfin.Server.Implementations.Users
                 await UpdateUserInternalAsync(dbContext, user).ConfigureAwait(false);
             }
         }
-
-        internal async Task<User> CreateUserInternalAsync(string name, JellyfinDbContext dbContext)
+        internal async Task<User> CreateUserInternalAsyncWithGuid(string name, JellyfinDbContext dbContext, Guid id)
         {
             // TODO: Remove after user item data is migrated.
             var max = await dbContext.Users.AsQueryable().AnyAsync().ConfigureAwait(false)
@@ -199,14 +198,30 @@ namespace Jellyfin.Server.Implementations.Users
                 InternalId = max + 1
             };
 
+            if (!id.Equals(default))
+            {
+                user.Id = id;
+            }
+
             user.AddDefaultPermissions();
             user.AddDefaultPreferences();
 
             return user;
         }
 
+        internal async Task<User> CreateUserInternalAsync(string name, JellyfinDbContext dbContext)
+        {
+            return await CreateUserInternalAsyncWithGuid(name, dbContext, Guid.Empty).ConfigureAwait(false);
+        }
+
         /// <inheritdoc/>
         public async Task<User> CreateUserAsync(string name)
+        {
+            return await CreateUserAsync(name, Guid.Empty).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<User> CreateUserAsync(string name, Guid id)
         {
             ThrowIfInvalidUsername(name);
 
@@ -222,7 +237,7 @@ namespace Jellyfin.Server.Implementations.Users
             var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
             await using (dbContext.ConfigureAwait(false))
             {
-                newUser = await CreateUserInternalAsync(name, dbContext).ConfigureAwait(false);
+                newUser = await CreateUserInternalAsyncWithGuid(name, dbContext, id).ConfigureAwait(false);
 
                 dbContext.Users.Add(newUser);
                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
