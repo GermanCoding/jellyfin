@@ -169,7 +169,7 @@ namespace Jellyfin.Server.Implementations.Users
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
         }
 
-        internal async Task<User> CreateUserInternalAsync(string name, JellyfinDb dbContext)
+        internal async Task<User> CreateUserInternalAsyncWithGuid(string name, JellyfinDb dbContext, Guid id)
         {
             // TODO: Remove after user item data is migrated.
             var max = await dbContext.Users.AsQueryable().AnyAsync().ConfigureAwait(false)
@@ -184,6 +184,11 @@ namespace Jellyfin.Server.Implementations.Users
                 InternalId = max + 1
             };
 
+            if (!id.Equals(default))
+            {
+                user.Id = id;
+            }
+
             user.AddDefaultPermissions();
             user.AddDefaultPreferences();
 
@@ -192,8 +197,19 @@ namespace Jellyfin.Server.Implementations.Users
             return user;
         }
 
+        internal async Task<User> CreateUserInternalAsync(string name, JellyfinDb dbContext)
+        {
+            return await CreateUserInternalAsyncWithGuid(name, dbContext, Guid.Empty).ConfigureAwait(false);
+        }
+
         /// <inheritdoc/>
         public async Task<User> CreateUserAsync(string name)
+        {
+            return await CreateUserAsync(name, Guid.Empty).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<User> CreateUserAsync(string name, Guid id)
         {
             ThrowIfInvalidUsername(name);
 
@@ -207,7 +223,7 @@ namespace Jellyfin.Server.Implementations.Users
 
             await using var dbContext = _dbProvider.CreateContext();
 
-            var newUser = await CreateUserInternalAsync(name, dbContext).ConfigureAwait(false);
+            var newUser = await CreateUserInternalAsyncWithGuid(name, dbContext, id).ConfigureAwait(false);
 
             dbContext.Users.Add(newUser);
             await dbContext.SaveChangesAsync().ConfigureAwait(false);
