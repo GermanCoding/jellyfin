@@ -84,5 +84,10 @@ namespace Jellyfin.Api.Constants
         /// Policy name for managing LiveTV.
         /// </summary>
         public const string LiveTvManagement = "LiveTvManagement";
+
+        /// <summary>
+        /// Policy name for unsafe authorization.
+        /// </summary>
+        public const string UnsafeAuthorization = "UnsafeAuthorization";
     }
 }
