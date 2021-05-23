@@ -37,7 +37,6 @@ namespace Jellyfin.Api.Controllers
     /// Image controller.
     /// </summary>
     [Route("")]
-    [Authorize(Policy = Policies.DefaultAuthorization)]
     public class ImageController : BaseJellyfinApiController
     {
         private readonly IUserManager _userManager;
@@ -522,6 +521,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Items/{itemId}/Images/{imageType}")]
         [HttpHead("Items/{itemId}/Images/{imageType}", Name = "HeadItemImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -605,6 +605,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Items/{itemId}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Items/{itemId}/Images/{imageType}/{imageIndex}", Name = "HeadItemImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -688,6 +689,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Items/{itemId}/Images/{imageType}/{imageIndex}/{tag}/{format}/{maxWidth}/{maxHeight}/{percentPlayed}/{unplayedCount}")]
         [HttpHead("Items/{itemId}/Images/{imageType}/{imageIndex}/{tag}/{format}/{maxWidth}/{maxHeight}/{percentPlayed}/{unplayedCount}", Name = "HeadItemImage2")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -771,6 +773,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Artists/{name}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Artists/{name}/Images/{imageType}/{imageIndex}", Name = "HeadArtistImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -854,6 +857,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Genres/{name}/Images/{imageType}")]
         [HttpHead("Genres/{name}/Images/{imageType}", Name = "HeadGenreImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -937,6 +941,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Genres/{name}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Genres/{name}/Images/{imageType}/{imageIndex}", Name = "HeadGenreImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1020,6 +1025,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("MusicGenres/{name}/Images/{imageType}")]
         [HttpHead("MusicGenres/{name}/Images/{imageType}", Name = "HeadMusicGenreImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1103,6 +1109,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("MusicGenres/{name}/Images/{imageType}/{imageIndex}")]
         [HttpHead("MusicGenres/{name}/Images/{imageType}/{imageIndex}", Name = "HeadMusicGenreImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1186,6 +1193,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Persons/{name}/Images/{imageType}")]
         [HttpHead("Persons/{name}/Images/{imageType}", Name = "HeadPersonImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1269,6 +1277,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Persons/{name}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Persons/{name}/Images/{imageType}/{imageIndex}", Name = "HeadPersonImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1352,6 +1361,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Studios/{name}/Images/{imageType}")]
         [HttpHead("Studios/{name}/Images/{imageType}", Name = "HeadStudioImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1435,6 +1445,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Studios/{name}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Studios/{name}/Images/{imageType}/{imageIndex}", Name = "HeadStudioImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1518,6 +1529,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Users/{userId}/Images/{imageType}")]
         [HttpHead("Users/{userId}/Images/{imageType}", Name = "HeadUserImage")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
@@ -1624,6 +1636,7 @@ namespace Jellyfin.Api.Controllers
         /// </returns>
         [HttpGet("Users/{userId}/Images/{imageType}/{imageIndex}")]
         [HttpHead("Users/{userId}/Images/{imageType}/{imageIndex}", Name = "HeadUserImageByIndex")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesImageFile]
