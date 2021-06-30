@@ -572,7 +572,7 @@ namespace Jellyfin.Api.Controllers
             AuthorizationInfo auth = await _authContext.GetAuthorizationInfo(Request).ConfigureAwait(false);
 
             await _sessionManager.Logout(auth.Token).ConfigureAwait(false);
-            Response.Cookies.Delete("Jellyfin-Auth");
+            Response.Cookies.Delete("__Host-Jellyfin-Auth");
             return NoContent();
         }
 
