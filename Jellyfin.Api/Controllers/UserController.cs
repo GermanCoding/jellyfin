@@ -236,7 +236,7 @@ namespace Jellyfin.Api.Controllers
 
                 // Delete any potentially old cookie
                 // New cookie should get set on next request
-                Response.Cookies.Delete("Jellyfin-Auth");
+                Response.Cookies.Delete("__Host-Jellyfin-Auth");
 
                 return result;
             }

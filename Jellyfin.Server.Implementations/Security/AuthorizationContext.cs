@@ -20,7 +20,7 @@ namespace Jellyfin.Server.Implementations.Security
         private readonly IServerApplicationHost _serverApplicationHost;
 
         // Setting no expires attribute should make this cookie short lived enough
-        private static readonly CookieOptions _options = new CookieOptions { HttpOnly = true, Secure = true, IsEssential = true, SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict };
+        private static readonly CookieOptions _options = new CookieOptions { Path = "/", HttpOnly = true, Secure = true, IsEssential = true, SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict };
 
         public AuthorizationContext(
             JellyfinDbProvider jellyfinDb,
@@ -232,7 +232,7 @@ namespace Jellyfin.Server.Implementations.Security
                 auth = httpReq.Request.Headers[HeaderNames.Authorization];
             }
 
-            httpReq.Request.Cookies.TryGetValue("Jellyfin-Auth", out var new_auth);
+            httpReq.Request.Cookies.TryGetValue("__Host-Jellyfin-Auth", out var new_auth);
 
             if (!string.IsNullOrEmpty(auth))
             {
@@ -258,7 +258,7 @@ namespace Jellyfin.Server.Implementations.Security
                     var resp = httpReq.Response;
                     if (!resp.Headers.ContainsKey("Set-Cookie"))
                     {
-                        resp.Cookies.Append("Jellyfin-Auth", auth, _options);
+                        resp.Cookies.Append("__Host-Jellyfin-Auth", auth, _options);
                     }
                 }
             }
@@ -288,7 +288,7 @@ namespace Jellyfin.Server.Implementations.Security
                 auth = httpReq.Headers[HeaderNames.Authorization];
             }
 
-            httpReq.Cookies.TryGetValue("Jellyfin-Auth", out var new_auth);
+            httpReq.Cookies.TryGetValue("__Host-Jellyfin-Auth", out var new_auth);
 
             if (!string.IsNullOrEmpty(auth))
             {
@@ -314,7 +314,7 @@ namespace Jellyfin.Server.Implementations.Security
                     var resp = httpReq.HttpContext.Response;
                     if (!resp.Headers.ContainsKey("Set-Cookie"))
                     {
-                        resp.Cookies.Append("Jellyfin-Auth", auth, _options);
+                        resp.Cookies.Append("__Host-Jellyfin-Auth", auth, _options);
                     }
                 }
             }
