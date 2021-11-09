@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
-using MediaBrowser.Common;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Authentication;
@@ -288,6 +287,14 @@ namespace Emby.Server.Implementations.QuickConnect
         private void ReloadConfiguration()
         {
             State = _config.Configuration.QuickConnectAvailable ? QuickConnectState.Active : QuickConnectState.Unavailable;
+        }
+
+        /// <summary>
+        /// Gets all current requests.
+        /// </summary>
+        public ConcurrentDictionary<string, QuickConnectResult> ListAll()
+        {
+            return _currentRequests;
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using MediaBrowser.Model.QuickConnect;
 
 namespace MediaBrowser.Controller.QuickConnect
@@ -83,5 +84,11 @@ namespace MediaBrowser.Controller.QuickConnect
         /// </summary>
         /// <returns>A short, unique alphanumeric string.</returns>
         string GenerateCode();
+
+        /// <summary>
+        /// Gets all pending quick connect requests.
+        /// </summary>
+        /// <returns>All pending quick connect requests.</returns>
+        ConcurrentDictionary<string, QuickConnectResult> ListAll();
     }
 }

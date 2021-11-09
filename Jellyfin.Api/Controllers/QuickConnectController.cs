@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Helpers;
@@ -149,6 +151,19 @@ namespace Jellyfin.Api.Controllers
             }
 
             return _quickConnect.DeleteAllDevices(userId.Value);
+        }
+
+        /// <summary>
+        /// Get all pending quick connect requests.
+        /// </summary>
+        /// <response code="200">All quick connect devices were deleted.</response>
+        /// <returns>The number of devices that were deleted.</returns>
+        [HttpPost("ListAll")]
+        [Authorize(Policy = Policies.RequiresElevation)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ConcurrentDictionary<string, QuickConnectResult> ListAll()
+        {
+            return _quickConnect.ListAll();
         }
     }
 }
