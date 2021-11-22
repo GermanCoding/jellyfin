@@ -38,6 +38,8 @@ namespace Jellyfin.Api.Controllers
         /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
         /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
         /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+        /// <param name="userDataManager">Instance of the <see cref="IUserDataManager"/> interface.</param>
+        /// <param name="authContext">Instance of the <see cref="IAuthorizationContext"/> interface.</param>
         public PersonsController(
             ILibraryManager libraryManager,
             IDtoService dtoService,
