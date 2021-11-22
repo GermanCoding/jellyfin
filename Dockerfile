@@ -84,8 +84,8 @@ FROM app
 
 ENV HEALTHCHECK_URL=http://localhost:8096/health
 
-COPY --from=builder /jellyfin /jellyfin
-COPY --from=web-builder /dist /jellyfin/jellyfin-web
+COPY --from=builder --chown=1050:1050 /jellyfin /jellyfin
+COPY --from=web-builder --chown=1050:1050 /dist /jellyfin/jellyfin-web
 
 EXPOSE 8096
 VOLUME /cache /config
