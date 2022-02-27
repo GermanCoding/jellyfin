@@ -286,7 +286,7 @@ namespace MediaBrowser.Controller.MediaEncoding
         }
 
         /// <summary>
-        /// Gets the authentication param
+        /// Gets the authentication param.
         /// </summary>
         /// <param name="info">The media source info.</param>
         /// <returns>System.String.</returns>

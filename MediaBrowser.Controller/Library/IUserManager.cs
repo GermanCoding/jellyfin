@@ -79,9 +79,9 @@ namespace MediaBrowser.Controller.Library
         /// Creates a user with the specified name.
         /// </summary>
         /// <param name="name">The name of the new user.</param>
-        /// <param name="id">Optional: The id of the new user</param>
+        /// <param name="id">Optional: The id of the new user.</param>
         /// <returns>The created user.</returns>
-        /// <exception cref="ArgumentNullException">name</exception>
+        /// <exception cref="ArgumentNullException">name.</exception>
         /// <exception cref="ArgumentException"></exception>
         Task<User> CreateUserAsync(string name, Guid id);
 
