@@ -273,6 +273,12 @@ namespace MediaBrowser.Model.Entities
                         // Do not display the language code in display titles if unset or set to a special code. Show it in all other cases (possibly expanded).
                         if (!string.IsNullOrEmpty(Language) && !_specialCodes.Contains(Language, StringComparison.OrdinalIgnoreCase))
                         {
+                            // Fix "ger" for German
+                            if (string.Equals(Language, "ger", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Language = "deu";
+                            }
+
                             // Get full language string i.e. eng -> English, zh-Hans -> Chinese (Simplified).
                             var cultures = CultureInfo.GetCultures(CultureTypes.NeutralCultures);
                             CultureInfo match = null;
@@ -294,7 +300,7 @@ namespace MediaBrowser.Model.Entities
                                     r.ThreeLetterISOLanguageName.Equals(Language, StringComparison.OrdinalIgnoreCase));
                             }
 
-                            string fullLanguage = match?.DisplayName;
+                            string fullLanguage = match?.NativeName;
                             attributes.Add(StringHelper.FirstToUpper(fullLanguage ?? Language));
                         }
 
@@ -318,7 +324,8 @@ namespace MediaBrowser.Model.Entities
 
                         if (IsDefault)
                         {
-                            attributes.Add(string.IsNullOrEmpty(LocalizedDefault) ? "Default" : LocalizedDefault);
+                            // I personally think the "Default" on basically all audio streams is just annoying and not helpful. Let's not add it to display titles.
+                            // attributes.Add(string.IsNullOrEmpty(LocalizedDefault) ? "Default" : LocalizedDefault);
                         }
 
                         if (IsExternal)
@@ -393,6 +400,12 @@ namespace MediaBrowser.Model.Entities
 
                         if (!string.IsNullOrEmpty(Language))
                         {
+                            // Fix "ger" for German
+                            if (string.Equals(Language, "ger", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Language = "deu";
+                            }
+
                             // Get full language string i.e. eng -> English, zh-Hans -> Chinese (Simplified).
                             var cultures = CultureInfo.GetCultures(CultureTypes.NeutralCultures);
                             CultureInfo match = null;
@@ -414,7 +427,7 @@ namespace MediaBrowser.Model.Entities
                                     r.ThreeLetterISOLanguageName.Equals(Language, StringComparison.OrdinalIgnoreCase));
                             }
 
-                            string fullLanguage = match?.DisplayName;
+                            string fullLanguage = match?.NativeName;
                             attributes.Add(StringHelper.FirstToUpper(fullLanguage ?? Language));
                         }
                         else
