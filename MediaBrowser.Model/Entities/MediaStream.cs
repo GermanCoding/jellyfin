@@ -238,7 +238,13 @@ namespace MediaBrowser.Model.Entities
                             string fullLanguage = CultureInfo
                                 .GetCultures(CultureTypes.NeutralCultures)
                                 .FirstOrDefault(r => r.ThreeLetterISOLanguageName.Equals(Language, StringComparison.OrdinalIgnoreCase))
-                                ?.DisplayName;
+                                ?.NativeName;
+                            // Fix "ger" for German
+                            if (string.Equals(Language, "ger", StringComparison.OrdinalIgnoreCase))
+                            {
+                                    fullLanguage = CultureInfo.GetCultureInfo("deu").NativeName;
+                            }
+
                             attributes.Add(StringHelper.FirstToUpper(fullLanguage ?? Language));
                         }
 
@@ -338,7 +344,7 @@ namespace MediaBrowser.Model.Entities
                             string fullLanguage = CultureInfo
                                 .GetCultures(CultureTypes.NeutralCultures)
                                 .FirstOrDefault(r => r.ThreeLetterISOLanguageName.Equals(Language, StringComparison.OrdinalIgnoreCase))
-                                ?.DisplayName;
+                                ?.NativeName;
                             attributes.Add(StringHelper.FirstToUpper(fullLanguage ?? Language));
                         }
                         else
