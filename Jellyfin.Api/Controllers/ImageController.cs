@@ -1731,6 +1731,7 @@ namespace Jellyfin.Api.Controllers
         /// <response code="200">Splashscreen returned successfully.</response>
         /// <returns>The splashscreen.</returns>
         [HttpGet("Branding/Splashscreen")]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesImageFile]
         public async Task<ActionResult> GetSplashscreen(
