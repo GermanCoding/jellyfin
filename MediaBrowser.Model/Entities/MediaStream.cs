@@ -370,6 +370,12 @@ namespace MediaBrowser.Model.Entities
                                 .GetCultures(CultureTypes.NeutralCultures)
                                 .FirstOrDefault(r => r.ThreeLetterISOLanguageName.Equals(Language, StringComparison.OrdinalIgnoreCase))
                                 ?.NativeName;
+                            // Fix "ger" for German
+                            if (string.Equals(Language, "ger", StringComparison.OrdinalIgnoreCase))
+                            {
+                                fullLanguage = CultureInfo.GetCultureInfo("deu").NativeName;
+                            }
+
                             attributes.Add(StringHelper.FirstToUpper(fullLanguage ?? Language));
                         }
                         else
