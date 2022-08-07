@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +16,8 @@ using Jellyfin.Api.Extensions;
 using Jellyfin.Api.Helpers;
 using Jellyfin.Api.ModelBinders;
 using Jellyfin.Api.Models.LibraryDtos;
+using Jellyfin.Api.Results;
+using Jellyfin.Api.Streams;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
@@ -339,7 +343,7 @@ namespace Jellyfin.Api.Controllers
             }
             catch (Exception ex)
             {
-                 _logger.LogError(ex, "Error refreshing library");
+                _logger.LogError(ex, "Error refreshing library");
             }
 
             return NoContent();
@@ -654,7 +658,7 @@ namespace Jellyfin.Api.Controllers
         [Authorize(Policy = Policies.Download)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesFile("video/*", "audio/*")]
+        [ProducesFile("video/*", "audio/*", "application/*")]
         public async Task<ActionResult> GetDownload([FromRoute, Required] Guid itemId)
         {
             var item = _libraryManager.GetItemById(itemId);
@@ -690,7 +694,7 @@ namespace Jellyfin.Api.Controllers
             var path = item.Path;
 
             // Quotes are valid in linux. They'll possibly cause issues here
-            var filename = (Path.GetFileName(path) ?? string.Empty).Replace("\"", string.Empty, StringComparison.Ordinal);
+            var filename = (item.FileNameWithoutExtension ?? string.Empty).Replace("\"", string.Empty, StringComparison.Ordinal);
             if (!string.IsNullOrWhiteSpace(filename))
             {
                 // Kestrel doesn't support non-ASCII characters in headers
@@ -701,8 +705,42 @@ namespace Jellyfin.Api.Controllers
                 }
             }
 
-            // TODO determine non-ASCII validity.
-            return PhysicalFile(path, MimeTypes.GetMimeType(path), filename, true);
+            var streams = item.GetMediaStreams();
+            var uniqueFiles = new List<string>();
+            foreach (var stream in streams)
+            {
+                if (!(string.IsNullOrEmpty(stream.Path) || uniqueFiles.Contains(stream.Path)))
+                {
+                    uniqueFiles.Add(stream.Path);
+                }
+            }
+
+            uniqueFiles.Add(item.Path);
+
+            if (uniqueFiles.Count > 1)
+            {
+                return new FileCallbackResult(new MediaTypeHeaderValue("application/octet-stream"), async (outputStream, _) =>
+                {
+                    using (var zipArchive = new ZipArchive(new WriteOnlyStream(outputStream), ZipArchiveMode.Create))
+                    {
+                        foreach (var file in uniqueFiles)
+                        {
+                            var zipEntry = zipArchive.CreateEntry(Path.GetFileName(file), CompressionLevel.Fastest);
+                            await using var zipStream = zipEntry.Open();
+                            await using var data = System.IO.File.OpenRead(file);
+                            await data.CopyToAsync(zipStream).ConfigureAwait(false);
+                        }
+                    }
+                })
+                {
+                    FileDownloadName = filename + ".zip"
+                };
+            }
+            else
+            {
+                // TODO determine non-ASCII validity.
+                return PhysicalFile(path, MimeTypes.GetMimeType(path), filename, true);
+            }
         }
 
         /// <summary>
