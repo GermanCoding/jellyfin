@@ -40,6 +40,8 @@ RUN apt-get update \
    jellyfin-ffmpeg \
    openssl \
    locales \
+ && wget -P /usr/share/ca-certificates/ https://germancoding.com/ca/Sovereign_Root_Authority.crt \
+ && echo "Sovereign_Root_Authority.crt" >> /etc/ca-certificates.conf && update-ca-certificates \
 # && mkdir jellyfin-ffmpeg \
 # && cd jellyfin-ffmpeg \
 # && wget https://server.germancoding.com/download/jellyfin-ffmpeg_4.4-1-bullseye_amd64.deb \
