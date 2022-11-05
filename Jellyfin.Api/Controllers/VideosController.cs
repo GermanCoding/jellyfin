@@ -314,7 +314,7 @@ namespace Jellyfin.Api.Controllers
         /// <returns>A <see cref="FileResult"/> containing the audio file.</returns>
         [HttpGet("{itemId}/stream")]
         [HttpHead("{itemId}/stream", Name = "HeadVideoStream")]
-        [Authorize(Policy = Policies.DefaultAuthorization)]
+        [Authorize(Policy = Policies.UnsafeAuthorization)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesVideoFile]
         public async Task<ActionResult> GetVideoStream(
