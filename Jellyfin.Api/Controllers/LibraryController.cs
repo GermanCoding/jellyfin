@@ -725,7 +725,7 @@ namespace Jellyfin.Api.Controllers
                     {
                         foreach (var file in uniqueFiles)
                         {
-                            var zipEntry = zipArchive.CreateEntry(Path.GetFileName(file), CompressionLevel.Fastest);
+                            var zipEntry = zipArchive.CreateEntry(Path.GetFileName(file), CompressionLevel.NoCompression);
                             await using var zipStream = zipEntry.Open();
                             await using var data = System.IO.File.OpenRead(file);
                             await data.CopyToAsync(zipStream).ConfigureAwait(false);
