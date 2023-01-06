@@ -721,14 +721,19 @@ namespace Jellyfin.Api.Controllers
             {
                 return new FileCallbackResult(new MediaTypeHeaderValue("application/octet-stream"), async (outputStream, _) =>
                 {
-                    using (var zipArchive = new ZipArchive(new WriteOnlyStream(outputStream), ZipArchiveMode.Create))
+                    using var zipArchive = new ZipArchive(outputStream, ZipArchiveMode.Create);
+                    foreach (var file in uniqueFiles)
                     {
-                        foreach (var file in uniqueFiles)
+                        var zipEntry = zipArchive.CreateEntry(Path.GetFileName(file), CompressionLevel.NoCompression);
+
+                        var zipStream = zipEntry.Open();
+                        await using (zipStream.ConfigureAwait(false))
                         {
-                            var zipEntry = zipArchive.CreateEntry(Path.GetFileName(file), CompressionLevel.NoCompression);
-                            await using var zipStream = zipEntry.Open();
-                            await using var data = System.IO.File.OpenRead(file);
-                            await data.CopyToAsync(zipStream).ConfigureAwait(false);
+                            var data = System.IO.File.OpenRead(file);
+                            await using (data.ConfigureAwait(false))
+                            {
+                                await data.CopyToAsync(zipStream).ConfigureAwait(false);
+                            }
                         }
                     }
                 })
