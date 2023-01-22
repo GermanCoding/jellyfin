@@ -197,7 +197,7 @@ namespace Jellyfin.Api.Controllers
 
             foreach (var key in displayPreferences.CustomPrefs.Keys.Where(key => key.StartsWith("homesection", StringComparison.OrdinalIgnoreCase)))
             {
-                var order = int.Parse(key.AsSpan().Slice("homesection".Length));
+                var order = int.Parse(key.AsSpan().Slice("homesection".Length), provider: CultureInfo.InvariantCulture);
                 if (!Enum.TryParse<HomeSectionType>(displayPreferences.CustomPrefs[key], true, out var type))
                 {
                     type = order < 8 ? defaults[order] : HomeSectionType.None;
