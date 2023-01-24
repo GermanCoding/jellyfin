@@ -718,7 +718,7 @@ namespace Jellyfin.Api.Controllers
 
             if (uniqueFiles.Count > 1)
             {
-                return new FileCallbackResult(new MediaTypeHeaderValue("application/octet-stream"), async (outputStream, _) =>
+                return new FileCallbackResult(new MediaTypeHeaderValue("application/octet-stream").ToString(), async (outputStream, _) =>
                 {
                     using var zipArchive = new ZipArchive(outputStream, ZipArchiveMode.Create);
                     foreach (var file in uniqueFiles)

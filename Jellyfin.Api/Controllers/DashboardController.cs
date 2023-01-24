@@ -1,11 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 using Jellyfin.Api.Attributes;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Models;
+using Jellyfin.Api.Results;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Net;
 using MediaBrowser.Model.Plugins;
@@ -91,7 +96,28 @@ namespace Jellyfin.Api.Controllers
                 return NotFound();
             }
 
-            return File(stream, MimeTypes.GetMimeType(resourcePath));
+            string secureRandomString = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+
+            Response.Headers.Append("X-CSP-Nonce", secureRandomString);
+
+            return new FileCallbackResult(MimeTypes.GetMimeType(resourcePath), async (outputStream, _) =>
+            {
+                using StreamReader sr = new StreamReader(stream);
+                using StreamWriter sw = new StreamWriter(outputStream);
+                while (sr.Peek() >= 0)
+                {
+                    string? line = await sr.ReadLineAsync().ConfigureAwait(false);
+                    if (line != null)
+                    {
+                        if (line.Contains("<script", StringComparison.OrdinalIgnoreCase))
+                        {
+                            line = line.Replace("<script", "<script nonce=\"" + secureRandomString + "\"", StringComparison.OrdinalIgnoreCase);
+                        }
+                    }
+
+                    await sw.WriteLineAsync(line).ConfigureAwait(false);
+                }
+            });
         }
 
         private IEnumerable<ConfigurationPageInfo> GetConfigPages(LocalPlugin plugin)

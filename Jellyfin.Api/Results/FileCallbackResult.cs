@@ -21,7 +21,7 @@ namespace Jellyfin.Api.Results
         /// </summary>
         /// <param name="contentType">The content type.</param>
         /// <param name="callback">The callback.</param>
-        public FileCallbackResult(MediaTypeHeaderValue? contentType, Func<Stream, ActionContext, Task>? callback)
+        public FileCallbackResult(string? contentType, Func<Stream, ActionContext, Task>? callback)
             : base(contentType == null ? string.Empty : contentType.ToString())
         {
             if (callback == null)
