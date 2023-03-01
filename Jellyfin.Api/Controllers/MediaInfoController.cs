@@ -188,6 +188,25 @@ public class MediaInfoController : BaseJellyfinApiController
 
         if (profile is not null)
         {
+            if ("yes".Equals(Request.Headers["X-HEVC-Disable"], StringComparison.OrdinalIgnoreCase))
+            {
+                var directPlayProfiles = profile.DirectPlayProfiles;
+                foreach (var directProfile in directPlayProfiles)
+                {
+                    var codecs = directProfile.VideoCodec;
+                    if (codecs == null)
+                    {
+                        continue;
+                    }
+
+                    var newCodecs = codecs.Replace("hevc", string.Empty, StringComparison.OrdinalIgnoreCase);
+                    newCodecs = newCodecs.Replace("h265", string.Empty, StringComparison.OrdinalIgnoreCase);
+                    newCodecs = newCodecs.Replace(",,", ",", StringComparison.OrdinalIgnoreCase);
+
+                    directProfile.VideoCodec = newCodecs;
+                }
+            }
+
             // set device specific data
             foreach (var mediaSource in info.MediaSources)
             {
