@@ -5403,6 +5403,9 @@ namespace MediaBrowser.Controller.MediaEncoding
                 return;
             }
 
+            // MOD: Instead of shifting, remove HEVC codecs and use H264 as fallback
+            /*
+
             // No need to shift if there is only one supported video codec.
             if (videoCodecs.Count < 2)
             {
@@ -5420,6 +5423,13 @@ namespace MediaBrowser.Controller.MediaEncoding
                 var removed = shiftVideoCodecs[0];
                 videoCodecs.RemoveAt(0);
                 videoCodecs.Add(removed);
+            }
+            */
+            videoCodecs.RemoveAll(codec => codec.Equals("h265", StringComparison.OrdinalIgnoreCase) || codec.Equals("hevc", StringComparison.OrdinalIgnoreCase));
+
+            if (videoCodecs.Count == 0)
+            {
+                videoCodecs.Add("h264");
             }
         }
 
