@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 
 using System;
 using System.Collections.Generic;
@@ -760,6 +760,9 @@ namespace MediaBrowser.MediaEncoding.Probing
                     // FFprobe exposes MP4 track names via the name tag rather than title
                     stream.Title = GetDictionaryValue(streamInfo.Tags, "name");
 
+                    // Never fall back to handler_name: encoders populate it with whatever they feel like
+                    // (encoder names, encoder versions, random garbage), practically never a real track title.
+                    /*
                     if (string.IsNullOrEmpty(stream.Title))
                     {
                         // fall back to handler_name if populated and not the default "SoundHandler"
@@ -769,6 +772,7 @@ namespace MediaBrowser.MediaEncoding.Probing
                             stream.Title = handlerName;
                         }
                     }
+                    */
                 }
             }
             else if (streamInfo.CodecType == CodecType.Subtitle)
@@ -790,6 +794,9 @@ namespace MediaBrowser.MediaEncoding.Probing
                     // FFprobe exposes MP4 track names via the name tag rather than title
                     stream.Title = GetDictionaryValue(streamInfo.Tags, "name");
 
+                    // Never fall back to handler_name: encoders populate it with whatever they feel like
+                    // (encoder names, encoder versions, random garbage), practically never a real track title.
+                    /*
                     if (string.IsNullOrEmpty(stream.Title))
                     {
                         // fall back to handler_name if populated and not the default "SubtitleHandler"
@@ -799,6 +806,7 @@ namespace MediaBrowser.MediaEncoding.Probing
                             stream.Title = handlerName;
                         }
                     }
+                    */
                 }
             }
             else if (streamInfo.CodecType == CodecType.Video)
