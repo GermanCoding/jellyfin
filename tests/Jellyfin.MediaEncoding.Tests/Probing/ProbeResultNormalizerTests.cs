@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -208,7 +208,9 @@ namespace Jellyfin.MediaEncoding.Tests.Probing
             Assert.Equal(2, res.MediaStreams[2].Channels);
             Assert.False(res.MediaStreams[2].IsDefault);
             Assert.Equal("eng", res.MediaStreams[2].Language);
-            Assert.Equal("Commentary", res.MediaStreams[2].Title);
+
+            // The title is only present as a handler_name tag, which we deliberately ignore.
+            Assert.Null(res.MediaStreams[2].Title);
 
             Assert.Equal("spa", res.MediaStreams[3].Language);
             Assert.Equal(MediaStreamType.Subtitle, res.MediaStreams[3].Type);
@@ -225,7 +227,9 @@ namespace Jellyfin.MediaEncoding.Tests.Probing
             Assert.Equal("eng", res.MediaStreams[5].Language);
             Assert.Equal(MediaStreamType.Subtitle, res.MediaStreams[5].Type);
             Assert.Equal("mov_text", res.MediaStreams[5].Codec);
-            Assert.Equal("Commentary", res.MediaStreams[5].Title);
+
+            // The title is only present as a handler_name tag, which we deliberately ignore.
+            Assert.Null(res.MediaStreams[5].Title);
             Assert.False(res.MediaStreams[5].IsHearingImpaired);
         }
 
