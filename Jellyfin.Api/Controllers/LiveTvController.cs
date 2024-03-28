@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
@@ -40,6 +40,7 @@ namespace Jellyfin.Api.Controllers;
 /// <summary>
 /// Live tv controller.
 /// </summary>
+[Authorize(Policy = Policies.UnsafeAuthorization)]
 public class LiveTvController : BaseJellyfinApiController
 {
     private readonly ILiveTvManager _liveTvManager;

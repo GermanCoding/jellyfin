@@ -49,6 +49,7 @@ public class PluginsController : BaseJellyfinApiController
     /// <response code="200">Installed plugins returned.</response>
     /// <returns>List of currently installed plugins.</returns>
     [HttpGet]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IEnumerable<PluginInfo>> GetPlugins()
     {
@@ -166,6 +167,7 @@ public class PluginsController : BaseJellyfinApiController
     /// <response code="404">Plugin not found or plugin configuration not found.</response>
     /// <returns>Plugin configuration.</returns>
     [HttpGet("{pluginId}/Configuration")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<BasePluginConfiguration> GetPluginConfiguration([FromRoute, Required] Guid pluginId)
@@ -190,6 +192,7 @@ public class PluginsController : BaseJellyfinApiController
     /// <response code="404">Plugin not found or plugin does not have configuration.</response>
     /// <returns>An <see cref="NoContentResult"/> on success, or a <see cref="NotFoundResult"/> if the plugin could not be found.</returns>
     [HttpPost("{pluginId}/Configuration")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> UpdatePluginConfiguration([FromRoute, Required] Guid pluginId)
@@ -249,6 +252,7 @@ public class PluginsController : BaseJellyfinApiController
     /// <response code="404">Plugin not found.</response>
     /// <returns>A <see cref="PluginManifest"/> on success, or a <see cref="NotFoundResult"/> if the plugin could not be found.</returns>
     [HttpPost("{pluginId}/Manifest")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<PluginManifest> GetPluginManifest([FromRoute, Required] Guid pluginId)
