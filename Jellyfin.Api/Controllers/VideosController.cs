@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
@@ -36,6 +36,7 @@ namespace Jellyfin.Api.Controllers;
 /// The videos controller.
 /// </summary>
 [Tags("Video")]
+[Authorize(Policy = Policies.UnsafeAuthorization)]
 public class VideosController : BaseJellyfinApiController
 {
     private readonly ILibraryManager _libraryManager;
