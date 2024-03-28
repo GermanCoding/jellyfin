@@ -38,6 +38,7 @@ namespace Jellyfin.Api.Controllers;
 /// Subtitle controller.
 /// </summary>
 [Route("")]
+[Authorize(Policy = Policies.UnsafeAuthorization)]
 public class SubtitleController : BaseJellyfinApiController
 {
     private readonly IServerConfigurationManager _serverConfigurationManager;

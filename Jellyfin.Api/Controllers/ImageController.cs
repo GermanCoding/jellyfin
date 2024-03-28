@@ -40,6 +40,7 @@ namespace Jellyfin.Api.Controllers;
 /// Image controller.
 /// </summary>
 [Route("")]
+[Authorize(Policy = Policies.UnsafeAuthorization)]
 public class ImageController : BaseJellyfinApiController
 {
     private readonly IUserManager _userManager;
