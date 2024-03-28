@@ -13,6 +13,7 @@ using Jellyfin.Api.Auth.DefaultAuthorizationPolicy;
 using Jellyfin.Api.Auth.FirstTimeSetupPolicy;
 using Jellyfin.Api.Auth.LocalAccessOrRequiresElevationPolicy;
 using Jellyfin.Api.Auth.SyncPlayAccessPolicy;
+using Jellyfin.Api.Auth.UnsafeAuthorizationPolicy;
 using Jellyfin.Api.Auth.UserPermissionPolicy;
 using Jellyfin.Api.Constants;
 using Jellyfin.Api.Controllers;
@@ -59,6 +60,7 @@ namespace Jellyfin.Server.Extensions
             serviceCollection.AddSingleton<IAuthorizationHandler, AnonymousLanAccessHandler>();
             serviceCollection.AddSingleton<IAuthorizationHandler, SyncPlayAccessHandler>();
             serviceCollection.AddSingleton<IAuthorizationHandler, LocalAccessOrRequiresElevationHandler>();
+            serviceCollection.AddSingleton<IAuthorizationHandler, UnsafeAuthorizationHandler>();
 
             return serviceCollection.AddAuthorizationCore(options =>
             {
@@ -87,6 +89,13 @@ namespace Jellyfin.Server.Extensions
                     Policies.RequiresElevation,
                     policy => policy.AddAuthenticationSchemes(AuthenticationSchemes.CustomAuthentication)
                         .RequireClaim(ClaimTypes.Role, UserRoles.Administrator));
+                options.AddPolicy(
+                    Policies.UnsafeAuthorization,
+                    policy =>
+                    {
+                        policy.AddAuthenticationSchemes(AuthenticationSchemes.CustomAuthentication);
+                        policy.AddRequirements(new UnsafeAuthorizationRequirement());
+                    });
             });
         }
 
@@ -215,9 +224,9 @@ namespace Jellyfin.Server.Extensions
 
                 // Add all xml doc files to swagger generator.
                 var xmlFiles = Directory.GetFiles(
-                    AppContext.BaseDirectory,
-                    "*.xml",
-                    SearchOption.TopDirectoryOnly);
+            AppContext.BaseDirectory,
+            "*.xml",
+            SearchOption.TopDirectoryOnly);
 
                 foreach (var xmlFile in xmlFiles)
                 {
@@ -226,18 +235,18 @@ namespace Jellyfin.Server.Extensions
 
                 // Order actions by route path, then by http method.
                 c.OrderActionsBy(description =>
-                    $"{description.ActionDescriptor.RouteValues["controller"]}_{description.RelativePath}");
+            $"{description.ActionDescriptor.RouteValues["controller"]}_{description.RelativePath}");
 
                 // Use method name as operationId
                 c.CustomOperationIds(
-                    description =>
-                    {
-                        description.TryGetMethodInfo(out MethodInfo methodInfo);
-                        // Attribute name, method name, none.
-                        return description?.ActionDescriptor.AttributeRouteInfo?.Name
-                               ?? methodInfo?.Name
-                               ?? null;
-                    });
+            description =>
+            {
+                description.TryGetMethodInfo(out MethodInfo methodInfo);
+                // Attribute name, method name, none.
+                return description?.ActionDescriptor.AttributeRouteInfo?.Name
+               ?? methodInfo?.Name
+               ?? null;
+            });
 
                 // Allow parameters to properly be nullable.
                 c.UseAllOfToExtendReferenceSchemas();
