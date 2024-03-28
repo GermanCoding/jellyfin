@@ -73,6 +73,7 @@ public class DashboardController : BaseJellyfinApiController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesFile(MediaTypeNames.Text.Html, "application/x-javascript")]
+    [Authorize(Policy = Policies.UnsafeAuthorization)]
     public ActionResult GetDashboardConfigurationPage([FromQuery] string? name)
     {
         var altPage = GetPluginPages().FirstOrDefault(p => string.Equals(p.Item1.Name, name, StringComparison.OrdinalIgnoreCase));
