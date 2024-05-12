@@ -1,4 +1,9 @@
 .directory
+jellyfin-packaging
+BUILD_COMMANDS.txt
+NOTES.txt
+dockerbuild.sh
+rsync_excludes.txt
 
 #################
 ## Eclipse
