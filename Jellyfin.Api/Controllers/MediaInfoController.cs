@@ -61,6 +61,18 @@ public class MediaInfoController : BaseJellyfinApiController
         _userManager = userManager;
     }
 
+    private static string? RemoveCodec(string? supportedCodecs, string disabledCoded)
+    {
+        if (supportedCodecs == null)
+        {
+            return null;
+        }
+
+        var newCodecs = supportedCodecs.Replace(disabledCoded, string.Empty, StringComparison.OrdinalIgnoreCase);
+        newCodecs = newCodecs.Replace(",,", ",", StringComparison.OrdinalIgnoreCase);
+        return newCodecs;
+    }
+
     /// <summary>
     /// Gets live playback media info for an item.
     /// </summary>
@@ -199,10 +211,22 @@ public class MediaInfoController : BaseJellyfinApiController
                         continue;
                     }
 
-                    var newCodecs = codecs.Replace("hevc", string.Empty, StringComparison.OrdinalIgnoreCase);
-                    newCodecs = newCodecs.Replace("h265", string.Empty, StringComparison.OrdinalIgnoreCase);
-                    newCodecs = newCodecs.Replace(",,", ",", StringComparison.OrdinalIgnoreCase);
+                    var newCodecs = RemoveCodec(codecs, "hevc");
+                    newCodecs = RemoveCodec(newCodecs, "h265");
+                    directProfile.VideoCodec = newCodecs;
+                }
+            }
 
+            var deviceName = User.GetDevice();
+            if ("ODROID-M1".Equals(deviceName, StringComparison.OrdinalIgnoreCase))
+            {
+                // Odroid-M1 is a bit to weak to handle AV1, but claims to support it. Ignore this claim.
+                _logger.LogDebug("Removing AV1 codec from device profile for ODROID-M1");
+                var directPlayProfiles = profile.DirectPlayProfiles;
+                foreach (var directProfile in directPlayProfiles)
+                {
+                    var codecs = directProfile.VideoCodec;
+                    var newCodecs = RemoveCodec(codecs, "av1");
                     directProfile.VideoCodec = newCodecs;
                 }
             }
