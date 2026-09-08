@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -120,11 +120,13 @@ namespace Jellyfin.Server.Implementations.Tests.Localization
         }
 
         [Theory]
-        [InlineData("ell", "Greek")] // Comma truncation
-        [InlineData("nld", "Dutch")] // Semicolon truncation
-        [InlineData("ron", "Romanian")] // Semicolon truncation, multiple
-        [InlineData("eng", "English")] // No truncation
-        [InlineData("zh-CN", "Chinese (Simplified)")] // No truncation, with parentheses
+        [InlineData("ell", "Ελληνικά")] // Native name
+        [InlineData("nld", "Nederlands")] // Native name
+        [InlineData("ron", "română")] // Native name
+        [InlineData("deu", "Deutsch")] // Native name
+        [InlineData("ger", "Deutsch")] // ISO 639-2/B alias resolves to the same native name
+        [InlineData("eng", "English")] // Native name equals the English name
+        [InlineData("zh-CN", "Chinese (Simplified)")] // Qualified entry keeps the culture list display name
         public async Task GetLanguageDisplayName_DelimitedName_ReturnsTruncatedName(string language, string expected)
         {
             var localizationManager = Setup(new ServerConfiguration

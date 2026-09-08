@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -41,6 +41,7 @@ namespace Emby.Server.Implementations.Localization
         private readonly JsonSerializerOptions _jsonOptions = JsonDefaults.Options;
 
         private readonly ConcurrentDictionary<string, CultureDto?> _cultureCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, string> _languageDisplayNameCache = new(StringComparer.OrdinalIgnoreCase);
         private List<CultureDto> _cultures = [];
 
         private static readonly (IReadOnlyList<LocalizationOption> Options, FrozenDictionary<string, string> Bcp47ToJellyfinMap) _localizationData = BuildLocalizationData();
@@ -226,6 +227,7 @@ namespace Emby.Server.Implementations.Localization
                 }
 
                 _cultureCache.Clear();
+                _languageDisplayNameCache.Clear();
                 _cultures = list;
                 _iso6392BtoT = iso6392BtoTdict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             }
@@ -269,14 +271,63 @@ namespace Emby.Server.Implementations.Localization
                 return null;
             }
 
-            var displayName = FindLanguageInfo(language)?.DisplayName;
-            if (displayName is null)
+            var culture = FindLanguageInfo(language);
+            if (culture is null)
             {
                 return null;
             }
 
-            // Truncate at the first delimiter to avoid cluttered display names
-            return displayName.Split([';', ','], StringSplitOptions.None)[0].Trim();
+            return _languageDisplayNameCache.GetOrAdd(
+                culture.Name,
+                static (_, cultureDto) =>
+                {
+                    // Truncate at the first delimiter to avoid cluttered display names
+                    var displayName = cultureDto.DisplayName.Split([';', ','], StringSplitOptions.None)[0].Trim();
+
+                    // Prefer the language's own native name over the English one, i.e. "Deutsch" instead of "German".
+                    return FindNativeName(cultureDto, displayName) ?? displayName;
+                },
+                culture);
+        }
+
+        /// <summary>
+        /// Resolves the native name of a language, i.e. the name of the language as written in that language itself.
+        /// </summary>
+        /// <param name="culture">The culture to resolve.</param>
+        /// <param name="displayName">The already truncated display name of <paramref name="culture"/>.</param>
+        /// <returns>The native name, or <c>null</c> if no unambiguous .NET culture matches.</returns>
+        private static string? FindNativeName(CultureDto culture, string displayName)
+        {
+            var dotnetCultures = CultureInfo.GetCultures(CultureTypes.NeutralCultures);
+
+            // An exact name match is always unambiguous, i.e. "zh-hans" -> "简体中文".
+            foreach (var dotnetCulture in dotnetCultures)
+            {
+                if (dotnetCulture.Name.Equals(culture.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return dotnetCulture.NativeName;
+                }
+            }
+
+            // A qualified entry such as "Chinese (Simplified)" has no matching neutral culture, and falling back to
+            // the bare language code below would collapse it into its unqualified parent ("Chinese"), dropping the
+            // qualifier. Keep the display name from the culture list in that case.
+            if (displayName.Contains('(', StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            foreach (var dotnetCulture in dotnetCultures)
+            {
+                if (culture.ThreeLetterISOLanguageNames.Contains(dotnetCulture.ThreeLetterISOLanguageName, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrEmpty(culture.TwoLetterISOLanguageName)
+                        && dotnetCulture.TwoLetterISOLanguageName.Equals(culture.TwoLetterISOLanguageName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return dotnetCulture.NativeName;
+                }
+            }
+
+            return null;
         }
 
         /// <inheritdoc />

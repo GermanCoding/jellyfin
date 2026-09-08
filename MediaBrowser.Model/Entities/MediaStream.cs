@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 #pragma warning disable CS1591
 
 using System;
@@ -299,7 +299,8 @@ namespace MediaBrowser.Model.Entities
 
                             if (IsDefault)
                             {
-                                attributes.Add(string.IsNullOrEmpty(LocalizedDefault) ? "Default" : LocalizedDefault);
+                                // I personally think the "Default" on basically all audio streams is just annoying and not helpful. Let's not add it to display titles.
+                                // attributes.Add(string.IsNullOrEmpty(LocalizedDefault) ? "Default" : LocalizedDefault);
                             }
 
                             if (IsExternal)

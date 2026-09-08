@@ -1,4 +1,4 @@
-using MediaBrowser.Model.Entities;
+﻿using MediaBrowser.Model.Entities;
 using Xunit;
 
 namespace Jellyfin.Model.Tests.Entities
@@ -95,8 +95,9 @@ namespace Jellyfin.Model.Tests.Entities
                     Codec = "SRT"
                 });
 
+            // "Default" is intentionally omitted from audio display titles, see MediaStream.DisplayTitle.
             data.Add(
-                "Title - AAC - Default - External",
+                "Title - AAC - External",
                 new MediaStream
                 {
                     Type = MediaStreamType.Audio,
